@@ -69,7 +69,22 @@ export function Header() {
       </div>
       {error && (
         <div className="mx-auto max-w-6xl px-4 py-2 text-sm text-red-400">
-          {error.message}
+          {error.message.includes('Provider not found') || error.message.includes('provider') ? (
+            <>
+              未检测到钱包。请安装{' '}
+              <a
+                href="https://metamask.io/download/"
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-red-300"
+              >
+                MetaMask
+              </a>
+              等浏览器扩展后再连接。
+            </>
+          ) : (
+            error.message
+          )}
         </div>
       )}
     </header>
