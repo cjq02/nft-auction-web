@@ -3,6 +3,7 @@ import { ConnectGuard } from '../common/ConnectGuard'
 import { useNftOwner } from '../../hooks/useNftOwner'
 
 const navItems = [
+  { to: '/manage/overview', label: '数据概览' },
   { to: '/manage/mint', label: '铸造 NFT' },
   { to: '/manage/burn', label: '销毁 NFT' },
 ]

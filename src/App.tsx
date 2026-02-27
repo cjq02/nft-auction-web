@@ -5,6 +5,7 @@ import { AuctionDetail } from './pages/AuctionDetail'
 import { CreateAuction } from './pages/CreateAuction'
 import { Profile } from './pages/Profile'
 import { ManageLayout } from './components/layout/ManageLayout'
+import { ManageOverview } from './pages/manage/ManageOverview'
 import { ManageMint } from './pages/manage/ManageMint'
 import { ManageBurn } from './pages/manage/ManageBurn'
 import { Login } from './pages/Login'
@@ -20,7 +21,8 @@ function App() {
           <Route path="auctions/create" element={<CreateAuction />} />
           <Route path="profile" element={<Profile />} />
           <Route path="manage" element={<ManageLayout />}>
-            <Route index element={<Navigate to="/manage/mint" replace />} />
+            <Route index element={<Navigate to="/manage/overview" replace />} />
+            <Route path="overview" element={<ManageOverview />} />
             <Route path="mint" element={<ManageMint />} />
             <Route path="burn" element={<ManageBurn />} />
           </Route>
