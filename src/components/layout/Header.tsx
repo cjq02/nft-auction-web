@@ -1,12 +1,19 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useAuth } from '../../hooks/useAuth'
+import { useNftOwner } from '../../hooks/useNftOwner'
 
 export function Header() {
   const { address, isConnected } = useAccount()
   const { connect, connectors, error, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const { isLoggedIn, logout } = useAuth()
+  const { isOwner } = useNftOwner()
+
+  useEffect(() => {
+    console.log('[Header] isOwner=', isOwner, 'address=', address)
+  }, [isOwner, address])
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--card)]/80 backdrop-blur">
@@ -21,13 +28,18 @@ export function Header() {
           <Link to="/auctions/create" className="text-sm text-zinc-400 hover:text-white">
             创建拍卖
           </Link>
+          {isOwner && (
+            <Link to="/manage" className="text-sm text-amber-400 hover:text-amber-300">
+              管理
+            </Link>
+          )}
           {isConnected ? (
             <>
               <Link to="/profile" className="text-sm text-zinc-400 hover:text-white">
                 个人中心
               </Link>
-              <span className="max-w-[120px] truncate text-xs text-zinc-500">
-                {address?.slice(0, 6)}...{address?.slice(-4)}
+              <span className="shrink-0 font-mono text-xs text-zinc-500 whitespace-nowrap">
+                {address}
               </span>
               <button
                 type="button"

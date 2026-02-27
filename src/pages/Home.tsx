@@ -37,7 +37,11 @@ export function Home() {
     )
   }
 
-  const list = data?.data ?? []
+  const list = Array.isArray(data?.data)
+    ? data.data
+    : Array.isArray(data)
+      ? data
+      : []
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">

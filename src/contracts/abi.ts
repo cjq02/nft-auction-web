@@ -87,6 +87,34 @@ export const auctionAbi = [
   },
 ] as const
 
+/** NFTMarketplace 合约：owner、mint、burn */
+export const nftMarketplaceAbi = [
+  {
+    type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'mint',
+    inputs: [
+      { name: 'to', type: 'address', internalType: 'address' },
+      { name: 'tokenURI', type: 'string', internalType: 'string' },
+    ],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'burn',
+    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const
+
 export const erc721Abi = [
   {
     type: 'function',
