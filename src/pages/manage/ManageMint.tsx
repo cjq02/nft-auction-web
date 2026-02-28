@@ -15,6 +15,16 @@ export function ManageMint() {
   return (
     <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
       <h2 className="mb-4 text-lg font-medium text-white">铸造 NFT</h2>
+
+      <div className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--bg)]/50 p-4 text-sm text-zinc-400">
+        <p className="font-medium text-zinc-300">填写说明</p>
+        <ul className="mt-2 list-inside list-disc space-y-1">
+          <li><strong className="text-zinc-300">接收地址</strong>：获得该 NFT 的钱包地址（0x 开头的 42 位地址）。</li>
+          <li><strong className="text-zinc-300">元数据 URI</strong>：指向「元数据 JSON」的链接。该 JSON 需包含 <code className="rounded bg-zinc-700 px-1">name</code>、<code className="rounded bg-zinc-700 px-1">description</code>、<code className="rounded bg-zinc-700 px-1">image</code> 等字段。可填 <code className="rounded bg-zinc-700 px-1">ipfs://Qm...</code> 或 <code className="rounded bg-zinc-700 px-1">https://...</code>。</li>
+        </ul>
+        <p className="mt-2 text-zinc-500">元数据示例：先上传图片到 IPFS/Pinata，再写一个 JSON（含 name、description、image），把 JSON 也上传到 IPFS，最后把该 JSON 的 URI 填到下方。</p>
+      </div>
+
       <form onSubmit={handleMint} className="max-w-md space-y-4">
         <div>
           <label className="block text-sm text-zinc-400">接收地址</label>
@@ -22,7 +32,7 @@ export function ManageMint() {
             type="text"
             value={mintTo}
             onChange={(e) => setMintTo(e.target.value)}
-            placeholder="0x..."
+            placeholder="0x1234...abcd（42 位以太坊地址）"
             required
             className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
           />
@@ -33,7 +43,7 @@ export function ManageMint() {
             type="text"
             value={mintTokenURI}
             onChange={(e) => setMintTokenURI(e.target.value)}
-            placeholder="ipfs://Qm... 或 https://..."
+            placeholder="ipfs://Qm... 或 https://example.com/metadata/1.json"
             required
             className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
           />

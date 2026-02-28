@@ -4,6 +4,7 @@ import { useNftOwner } from '../../hooks/useNftOwner'
 
 const navItems = [
   { to: '/manage/overview', label: '数据概览' },
+  { to: '/manage/list', label: '已铸造' },
   { to: '/manage/mint', label: '铸造 NFT' },
   { to: '/manage/burn', label: '销毁 NFT' },
 ]

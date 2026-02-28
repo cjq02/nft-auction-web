@@ -6,6 +6,7 @@ import { CreateAuction } from './pages/CreateAuction'
 import { Profile } from './pages/Profile'
 import { ManageLayout } from './components/layout/ManageLayout'
 import { ManageOverview } from './pages/manage/ManageOverview'
+import { ManageNftList } from './pages/manage/ManageNftList'
 import { ManageMint } from './pages/manage/ManageMint'
 import { ManageBurn } from './pages/manage/ManageBurn'
 import { Login } from './pages/Login'
@@ -23,6 +24,7 @@ function App() {
           <Route path="manage" element={<ManageLayout />}>
             <Route index element={<Navigate to="/manage/overview" replace />} />
             <Route path="overview" element={<ManageOverview />} />
+            <Route path="list" element={<ManageNftList />} />
             <Route path="mint" element={<ManageMint />} />
             <Route path="burn" element={<ManageBurn />} />
           </Route>
