@@ -68,8 +68,11 @@ export function Header() {
 
               {/* 地址 + 登录状态 */}
               <div className="flex flex-col items-end">
-                <span className="shrink-0 font-mono text-xs text-zinc-400 whitespace-nowrap">
-                  {address}
+                <span
+                  className="shrink-0 font-mono text-xs text-zinc-400 whitespace-nowrap"
+                  title={address}
+                >
+                  {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
                 </span>
                 {connectWalletPending ? (
                   <span className="text-xs text-zinc-500">登录中...</span>
