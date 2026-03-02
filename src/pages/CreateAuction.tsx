@@ -23,12 +23,12 @@ const STEPS: { key: Step; label: string }[] = [
 function StepIndicator({ current }: { current: Step }) {
   const idx = STEPS.findIndex((s) => s.key === current)
   return (
-    <ol className="mb-8 flex items-center gap-0">
+    <ol className="mb-8 flex items-center justify-center gap-0">
       {STEPS.map((s, i) => {
         const done = i < idx
         const active = i === idx
         return (
-          <li key={s.key} className="flex flex-1 items-center">
+          <li key={s.key} className="flex items-center">
             <div className="flex flex-col items-center gap-1">
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
@@ -54,7 +54,7 @@ function StepIndicator({ current }: { current: Step }) {
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`mb-5 h-0.5 flex-1 ${i < idx ? 'bg-[var(--accent)]' : 'bg-zinc-700'}`} />
+              <div className={`mb-5 h-0.5 w-16 ${i < idx ? 'bg-[var(--accent)]' : 'bg-zinc-700'}`} />
             )}
           </li>
         )
@@ -68,7 +68,7 @@ export function CreateAuction() {
   const { address } = useAccount()
 
   // Step 1 state
-  const [nftContract, setNftContract] = useState<string>(NFT_CONTRACT_ADDRESS)
+  const nftContract = NFT_CONTRACT_ADDRESS
   const [tokenId, setTokenId] = useState('')
 
   // Step 2 state
@@ -172,25 +172,11 @@ export function CreateAuction() {
             </p>
 
             <div>
-              <label className="block text-sm text-zinc-400">NFT 合约地址</label>
-              <input
-                type="text"
-                value={nftContract}
-                onChange={(e) => setNftContract(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white focus:border-[var(--accent)] focus:outline-none"
-              />
-            </div>
-
-            <div>
               <label className="block text-sm text-zinc-400">选择要拍卖的 NFT</label>
               {myNfts.length > 0 ? (
                 <select
                   value={tokenId}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setTokenId(v)
-                    if (v && contractForList) setNftContract(contractForList)
-                  }}
+                  onChange={(e) => setTokenId(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white focus:border-[var(--accent)] focus:outline-none"
                 >
                   <option value="">请选择 NFT</option>
@@ -242,7 +228,6 @@ export function CreateAuction() {
                 已授权 NFT：
                 <span className="ml-1 font-medium text-white">Token #{tokenId}</span>
               </p>
-              <p className="mt-0.5 truncate text-xs text-zinc-500">{nftContract}</p>
             </div>
 
             <div>
