@@ -29,7 +29,7 @@ function StepIndicator({ current }: { current: Step }) {
         const active = i === idx
         return (
           <li key={s.key} className="flex items-center">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex w-16 flex-col items-center gap-1">
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                   done
@@ -54,7 +54,7 @@ function StepIndicator({ current }: { current: Step }) {
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`mb-5 h-0.5 w-16 ${i < idx ? 'bg-[var(--accent)]' : 'bg-zinc-700'}`} />
+              <div className={`mb-5 h-0.5 w-12 ${i < idx ? 'bg-[var(--accent)]' : 'bg-zinc-700'}`} />
             )}
           </li>
         )
