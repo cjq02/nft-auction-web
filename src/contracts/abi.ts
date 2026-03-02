@@ -128,6 +128,13 @@ export const erc721Abi = [
   },
   {
     type: 'function',
+    name: 'getApproved',
+    inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'ownerOf',
     inputs: [{ name: 'tokenId', type: 'uint256', internalType: 'uint256' }],
     outputs: [{ name: '', type: 'address', internalType: 'address' }],

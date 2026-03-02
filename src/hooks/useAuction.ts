@@ -1,5 +1,6 @@
+import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { auctionAbi, erc721Abi } from '../contracts/abi'
 import { AUCTION_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS } from '../contracts/addresses'
 import * as auctionApi from '../api/auction'
@@ -39,17 +40,57 @@ export function useUserAuctions() {
 
 export function useCreateAuction() {
   const queryClient = useQueryClient()
-  const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  const create = async (params: {
+  // approve 和 create 使用独立的 writeContract，各自有独立的 isPending / isSuccess
+  const {
+    writeContract: writeApprove,
+    data: approveHash,
+    error: approveError,
+    isPending: isApproveWritePending,
+  } = useWriteContract()
+
+  const {
+    writeContract: writeCreate,
+    data: createHash,
+    error: createError,
+    isPending: isCreateWritePending,
+  } = useWriteContract()
+
+  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } =
+    useWaitForTransactionReceipt({ hash: approveHash })
+
+  const { isLoading: isCreateConfirming, isSuccess: isCreateSuccess } =
+    useWaitForTransactionReceipt({ hash: createHash })
+
+  // 仅 createAuction 交易确认后，才向后端上报 txHash 写库
+  useEffect(() => {
+    if (!isCreateSuccess || !createHash) return
+
+    auctionApi
+      .postSyncAuction(createHash)
+      .catch((err) => console.error('[useCreateAuction] 同步拍卖到后端失败', err))
+      .finally(() => {
+        queryClient.invalidateQueries({ queryKey: ['auctions'] })
+      })
+  }, [isCreateSuccess, createHash, queryClient])
+
+  const approveNft = (tokenId: bigint, nftContract: `0x${string}` = NFT_CONTRACT_ADDRESS) => {
+    writeApprove({
+      address: nftContract,
+      abi: erc721Abi,
+      functionName: 'approve',
+      args: [AUCTION_CONTRACT_ADDRESS, tokenId],
+    })
+  }
+
+  const create = (params: {
     nftContract: `0x${string}`
     tokenId: bigint
     duration: bigint
     minBidUSD: bigint
     paymentToken: `0x${string}`
   }) => {
-    writeContract({
+    writeCreate({
       address: AUCTION_CONTRACT_ADDRESS,
       abi: auctionAbi,
       functionName: 'createAuction',
@@ -63,25 +104,14 @@ export function useCreateAuction() {
     })
   }
 
-  const approveNft = async (tokenId: bigint, nftContract: `0x${string}` = NFT_CONTRACT_ADDRESS) => {
-    writeContract({
-      address: nftContract,
-      abi: erc721Abi,
-      functionName: 'approve',
-      args: [AUCTION_CONTRACT_ADDRESS, tokenId],
-    })
-  }
-
-  if (isSuccess && hash) {
-    queryClient.invalidateQueries({ queryKey: ['auctions'] })
-  }
-
   return {
-    create,
     approveNft,
-    hash,
-    error: writeError,
-    isPending: isPending || isConfirming,
-    isSuccess,
+    create,
+    approveError,
+    createError,
+    isApprovePending: isApproveWritePending || isApproveConfirming,
+    isApproveSuccess,
+    isCreatePending: isCreateWritePending || isCreateConfirming,
+    isCreateSuccess,
   }
 }

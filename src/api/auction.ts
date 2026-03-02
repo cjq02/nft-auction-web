@@ -71,3 +71,8 @@ export function fetchUserAuctions(address: string) {
     .get<{ code: number; data: ListResponse<AuctionListItem> }>(`/api/users/${address}/auctions`)
     .then((res) => res.data)
 }
+
+/** 交易上链确认后，将 txHash 上报给后端，由后端从链上读取事件并写库 */
+export function postSyncAuction(txHash: string) {
+  return api.post<{ code: number; data: AuctionListItem }>('/api/auctions', { txHash })
+}
