@@ -23,3 +23,11 @@ export function fetchNftList(contract?: string): Promise<MintedNftItem[]> {
     .get<{ code: number; data?: NftListResponse }>(`/api/nfts/list${q}`)
     .then((res) => (Array.isArray(res.data?.items) ? res.data!.items : []))
 }
+
+export function fetchMyNfts(owner: string, contract?: string): Promise<MintedNftItem[]> {
+  const params = new URLSearchParams({ owner })
+  if (contract) params.set('contract', contract)
+  return api
+    .get<{ code: number; data?: NftListResponse }>(`/api/nfts/list?${params.toString()}`)
+    .then((res) => (Array.isArray(res.data?.items) ? res.data!.items : []))
+}

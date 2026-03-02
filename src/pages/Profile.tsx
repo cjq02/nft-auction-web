@@ -2,9 +2,15 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { formatEther } from 'viem'
 import { useAccount } from 'wagmi'
+import { useQuery } from '@tanstack/react-query'
 import { useUserAuctions } from '../hooks/useAuction'
 import { useAuth } from '../hooks/useAuth'
 import { ConnectGuard } from '../components/common/ConnectGuard'
+import { fetchMyNfts } from '../api/nft'
+import { NFT_CONTRACT_ADDRESS } from '../contracts/addresses'
+import { toDisplayImageUrl } from '../utils/ipfs'
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 function formatTime(ts: number | string | null | undefined) {
   if (!ts) return '-'
@@ -20,6 +26,13 @@ export function Profile() {
   const { address } = useAccount()
   const { user, isNewUser, updateProfile, updateProfilePending, updateProfileError } = useAuth()
   const { data, isLoading, error } = useUserAuctions()
+
+  const contractForList = NFT_CONTRACT_ADDRESS !== ZERO_ADDRESS ? NFT_CONTRACT_ADDRESS : undefined
+  const { data: myNfts = [], isLoading: nftLoading } = useQuery({
+    queryKey: ['myNfts', address, contractForList],
+    queryFn: () => fetchMyNfts(address!, contractForList),
+    enabled: !!address && !!contractForList,
+  })
 
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -114,8 +127,9 @@ export function Profile() {
             </div>
           </div>
 
-          {/* Right: auction list */}
-          <div className="lg:col-span-2">
+          {/* Right: auction list + NFT list */}
+          <div className="lg:col-span-2 space-y-8">
+            <div>
             <h2 className="mb-4 text-lg font-medium text-white">我的拍卖</h2>
             {isLoading ? (
               <div className="h-40 animate-pulse rounded-xl bg-[var(--card)]" />
@@ -154,6 +168,63 @@ export function Profile() {
                   )
                 })}
               </ul>
+            )}
+            </div>
+
+            {/* My NFTs */}
+            {contractForList && (
+              <div>
+                <h2 className="mb-4 text-lg font-medium text-white">我的 NFT</h2>
+                {nftLoading ? (
+                  <div className="h-32 animate-pulse rounded-xl bg-[var(--card)]" />
+                ) : myNfts.length === 0 ? (
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center text-zinc-500">
+                    暂无 NFT
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {myNfts.map((item) => {
+                      const imageUrl = toDisplayImageUrl(item.image ?? item.tokenUri ?? undefined)
+                      return (
+                        <div
+                          key={item.tokenId}
+                          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
+                        >
+                          <div className="aspect-square bg-zinc-800">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={item.name ?? `#${item.tokenId}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-3xl text-zinc-600">
+                                #{item.tokenId}
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <p className="truncate font-medium text-white">
+                              {item.name ?? `Token #${item.tokenId}`}
+                            </p>
+                            {item.description && (
+                              <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
+                                {item.description}
+                              </p>
+                            )}
+                            <Link
+                              to="/auctions/create"
+                              className="mt-3 block w-full rounded-lg bg-[var(--accent)]/10 py-1.5 text-center text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)]/20"
+                            >
+                              去拍卖
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
