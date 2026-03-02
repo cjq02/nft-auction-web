@@ -1,17 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as authApi from '../api/auth'
 import { api } from '../api/client'
+import type { UserInfo } from '../api/auth'
 
-export interface User {
-  id: string
-  address: string
-  username?: string
-}
-
-async function fetchMe(): Promise<User | null> {
+async function fetchMe(): Promise<UserInfo | null> {
+  if (!authApi.getStoredToken()) return null
   try {
-    const data = await api.get<User>('/api/users/me')
-    return data
+    const res = await api.get<{ code: number; data: UserInfo }>('/api/users/me')
+    return res.data ?? null
   } catch {
     return null
   }
@@ -19,33 +15,36 @@ async function fetchMe(): Promise<User | null> {
 
 export function useAuth() {
   const queryClient = useQueryClient()
+
   const { data: user, isLoading } = useQuery({
-    queryKey: ['user', authApi.getStoredToken()],
+    queryKey: ['user'],
     queryFn: fetchMe,
     staleTime: 5 * 60 * 1000,
   })
 
+  const saveAndRefresh = (res: authApi.AuthResponse) => {
+    authApi.setToken(res.token)
+    queryClient.setQueryData(['user'], res.user)
+  }
+
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (res) => {
-      authApi.setToken(res.token)
-      queryClient.setQueryData(['user', res.token], res.user)
-      queryClient.invalidateQueries({ queryKey: ['user'] })
-    },
+    onSuccess: saveAndRefresh,
   })
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (res) => {
-      authApi.setToken(res.token)
-      queryClient.setQueryData(['user', res.token], res.user)
-      queryClient.invalidateQueries({ queryKey: ['user'] })
-    },
+    onSuccess: saveAndRefresh,
+  })
+
+  const connectWalletMutation = useMutation({
+    mutationFn: (walletAddress: string) => authApi.connectWallet(walletAddress),
+    onSuccess: saveAndRefresh,
   })
 
   const logout = () => {
     authApi.clearToken()
-    queryClient.setQueryData(['user', null], null)
+    queryClient.setQueryData(['user'], null)
     queryClient.invalidateQueries({ queryKey: ['user'] })
   }
 
@@ -55,6 +54,9 @@ export function useAuth() {
     isLoading,
     login: loginMutation.mutateAsync,
     register: registerMutation.mutateAsync,
+    connectWallet: connectWalletMutation.mutateAsync,
+    connectWalletPending: connectWalletMutation.isPending,
+    connectWalletError: connectWalletMutation.error,
     logout,
     loginError: loginMutation.error,
     registerError: registerMutation.error,

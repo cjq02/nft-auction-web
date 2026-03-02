@@ -14,17 +14,35 @@ export interface LoginBody {
   password?: string
 }
 
+export interface UserInfo {
+  id: number
+  username: string
+  walletAddress: string
+  email?: string
+}
+
 export interface AuthResponse {
   token: string
-  user: { id: string; address: string; username?: string }
+  user: UserInfo
 }
 
 export function register(data: RegisterBody) {
-  return api.post<AuthResponse>('/api/auth/register', data)
+  return api
+    .post<{ code: number; data: AuthResponse }>('/api/auth/register', data)
+    .then((res) => res.data)
 }
 
 export function login(data: LoginBody) {
-  return api.post<AuthResponse>('/api/auth/login', data)
+  return api
+    .post<{ code: number; data: AuthResponse }>('/api/auth/login', data)
+    .then((res) => res.data)
+}
+
+/** 钱包连接后调用，传钱包地址获得 JWT（无需用户名密码） */
+export function connectWallet(walletAddress: string) {
+  return api
+    .post<{ code: number; data: AuthResponse }>('/api/auth/wallet', { walletAddress })
+    .then((res) => res.data)
 }
 
 export function setToken(token: string) {

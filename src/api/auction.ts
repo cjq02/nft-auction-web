@@ -9,16 +9,17 @@ function toApiStatus(status: AuctionStatus): string {
 }
 
 export interface AuctionListItem {
-  id: number
+  id?: number
+  auctionId: number
   seller: string
   nftContract: string
-  tokenId: string
-  startTime: string
-  endTime: string
+  tokenId: number
+  startTime: number
+  endTime: number
   minBid: string
   paymentToken: string | null
-  status: AuctionStatus
-  nft?: { name?: string; image?: string; description?: string }
+  status: string          // 后端返回 "Active" / "Ended" / "Cancelled"
+  nft?: { name?: string; image?: string; description?: string; tokenURI?: string }
   highestBid?: { amount: string; bidder: string }
 }
 
@@ -59,11 +60,15 @@ export function fetchAuctionList(params?: ListParams) {
 }
 
 export function fetchAuctionById(id: string) {
-  return api.get<AuctionDetail>(`/api/auctions/${id}`)
+  return api
+    .get<{ code: number; data: AuctionDetail }>(`/api/auctions/${id}`)
+    .then((res) => res.data)
 }
 
 export function fetchAuctionBids(id: string) {
-  return api.get<{ data: BidItem[] }>(`/api/auctions/${id}/bids`).then((r) => r.data || [])
+  return api
+    .get<{ code: number; data: { bids: BidItem[] } }>(`/api/auctions/${id}/bids`)
+    .then((res) => res.data?.bids ?? [])
 }
 
 export function fetchUserAuctions(address: string) {

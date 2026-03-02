@@ -1,17 +1,31 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAccount } from 'wagmi'
-import { parseEther } from 'viem'
+import { parseEther, formatEther } from 'viem'
 import { useAuction, useAuctionBids } from '../hooks/useAuction'
 import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
 
-function formatAddress(addr: string) {
+function formatAddress(addr: string | null | undefined) {
   if (!addr) return '-'
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
-function formatTime(s: string) {
-  return new Date(s).toLocaleString('zh-CN')
+/** 后端时间戳为 Unix 秒，需 ×1000 转为毫秒 */
+function formatTime(ts: number | string | null | undefined) {
+  if (!ts) return '-'
+  const ms = typeof ts === 'number' ? ts * 1000 : Number(ts) * 1000
+  if (isNaN(ms)) return '-'
+  return new Date(ms).toLocaleString('zh-CN')
+}
+
+/** wei (string) → ETH，保留 4 位小数 */
+function weiToEth(wei: string | null | undefined) {
+  if (!wei) return '-'
+  try {
+    return `${formatEther(BigInt(wei))} ETH`
+  } catch {
+    return wei
+  }
 }
 
 export function AuctionDetail() {
@@ -32,9 +46,10 @@ export function AuctionDetail() {
   const { cancelAuction, isPending: cancelPending } = useCancelAuction(id)
 
   const isSeller = address && auction?.seller?.toLowerCase() === address.toLowerCase()
-  const isActive = auction?.status === 'active'
-  const ended = auction?.status === 'ended'
-  const canEnd = isActive && auction?.endTime && new Date(auction.endTime) <= new Date()
+  const statusLower = auction?.status?.toLowerCase()
+  const isActive = statusLower === 'active'
+  const ended = statusLower === 'ended'
+  const canEnd = isActive && auction?.endTime && auction.endTime * 1000 <= Date.now()
   const hasBids = (bids?.length ?? 0) > 0
 
   const handleBid = () => {
@@ -92,7 +107,7 @@ export function AuctionDetail() {
           <dl className="mt-6 space-y-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-zinc-500">拍卖 ID</dt>
-              <dd className="text-white">{auction.id}</dd>
+              <dd className="text-white">{auction.auctionId ?? auction.id ?? '-'}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">卖家</dt>
@@ -107,13 +122,14 @@ export function AuctionDetail() {
               <dd className="text-white">{formatTime(auction.endTime)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-zinc-500">最低出价 (USD 18d)</dt>
-              <dd className="text-white">{auction.minBid}</dd>
+              <dt className="text-zinc-500">最低出价</dt>
+              <dd className="text-white">{weiToEth(auction.minBid)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">支付方式</dt>
               <dd className="text-white">
-                {auction.paymentToken === null || auction.paymentToken === '0x0000000000000000000000000000000000000000'
+                {!auction.paymentToken ||
+                auction.paymentToken === '0x0000000000000000000000000000000000000000'
                   ? 'ETH'
                   : formatAddress(auction.paymentToken)}
               </dd>
@@ -186,7 +202,7 @@ export function AuctionDetail() {
                 className="flex justify-between text-sm"
               >
                 <span className="font-mono text-zinc-300">{formatAddress(bid.bidder)}</span>
-                <span className="text-[var(--accent)]">{bid.amount} {bid.isETH ? 'ETH' : 'Token'}</span>
+                <span className="text-[var(--accent)]">{weiToEth(bid.amount)}</span>
                 <span className="text-zinc-500">{formatTime(bid.timestamp)}</span>
               </li>
             ))}
