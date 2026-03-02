@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as authApi from '../api/auth'
 import { api } from '../api/client'
-import type { UserInfo } from '../api/auth'
+import type { UserInfo, UpdateProfileBody } from '../api/auth'
 
 async function fetchMe(): Promise<UserInfo | null> {
   if (!authApi.getStoredToken()) return null
@@ -42,21 +42,38 @@ export function useAuth() {
     onSuccess: saveAndRefresh,
   })
 
+  const updateProfileMutation = useMutation({
+    mutationFn: (body: UpdateProfileBody) => authApi.updateProfile(body),
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(['user'], updatedUser)
+    },
+  })
+
   const logout = () => {
     authApi.clearToken()
     queryClient.setQueryData(['user'], null)
     queryClient.invalidateQueries({ queryKey: ['user'] })
   }
 
+  const currentUser = user ?? null
+  // 新用户：username 与 walletAddress 相同（ConnectOrCreateByWallet 的默认值）
+  const isNewUser =
+    !!currentUser &&
+    currentUser.username?.toLowerCase() === currentUser.walletAddress?.toLowerCase()
+
   return {
-    user: user ?? null,
-    isLoggedIn: !!user,
+    user: currentUser,
+    isLoggedIn: !!currentUser,
+    isNewUser,
     isLoading,
     login: loginMutation.mutateAsync,
     register: registerMutation.mutateAsync,
     connectWallet: connectWalletMutation.mutateAsync,
     connectWalletPending: connectWalletMutation.isPending,
     connectWalletError: connectWalletMutation.error,
+    updateProfile: updateProfileMutation.mutateAsync,
+    updateProfilePending: updateProfileMutation.isPending,
+    updateProfileError: updateProfileMutation.error,
     logout,
     loginError: loginMutation.error,
     registerError: registerMutation.error,

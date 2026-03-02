@@ -45,6 +45,18 @@ export function connectWallet(walletAddress: string) {
     .then((res) => res.data)
 }
 
+export interface UpdateProfileBody {
+  username?: string
+  email?: string  // 传 "" 表示清空
+}
+
+/** PATCH /api/users/me — 修改用户名/邮箱 */
+export function updateProfile(body: UpdateProfileBody) {
+  return api
+    .patch<{ code: number; data: UserInfo }>('/api/users/me', body)
+    .then((res) => res.data)
+}
+
 export function setToken(token: string) {
   localStorage.setItem('nft_auction_token', token)
 }

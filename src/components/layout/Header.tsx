@@ -1,15 +1,16 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useAuth } from '../../hooks/useAuth'
 import { useNftOwner } from '../../hooks/useNftOwner'
 
 export function Header() {
+  const navigate = useNavigate()
   const { address, isConnected } = useAccount()
   const { connect, connectors, error: connectError, isPending: isConnecting } = useConnect()
   const { disconnect } = useDisconnect()
   const { isOwner } = useNftOwner()
-  const { user, isLoggedIn, connectWallet, connectWalletPending, logout } = useAuth()
+  const { user, isLoggedIn, isNewUser, connectWallet, connectWalletPending, logout } = useAuth()
 
   // 钱包连接成功后自动调后端 /api/auth/wallet 获取 JWT
   useEffect(() => {
@@ -19,6 +20,13 @@ export function Header() {
       )
     }
   }, [isConnected, address, isLoggedIn, connectWallet])
+
+  // 新用户（username == walletAddress）登录后跳转到个人中心完善信息
+  useEffect(() => {
+    if (isNewUser) {
+      navigate('/profile')
+    }
+  }, [isNewUser, navigate])
 
   // 钱包断开时同步登出
   useEffect(() => {

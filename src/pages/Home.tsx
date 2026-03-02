@@ -1,15 +1,25 @@
 import { Link } from 'react-router-dom'
+import { formatEther } from 'viem'
 import { useAuctionList } from '../hooks/useAuction'
 import { useQueryClient } from '@tanstack/react-query'
 
-function formatTime(s: string) {
-  const d = new Date(s)
-  return d.toLocaleString('zh-CN')
+function formatTime(ts: number | string | null | undefined) {
+  if (!ts) return '-'
+  const ms = typeof ts === 'number' ? ts * 1000 : Number(ts) * 1000
+  return isNaN(ms) ? '-' : new Date(ms).toLocaleString('zh-CN')
 }
 
 function formatAddress(addr: string) {
   if (!addr) return '-'
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+}
+
+function weiToEth(wei: string) {
+  try {
+    return `${formatEther(BigInt(wei))} ETH`
+  } catch {
+    return wei
+  }
 }
 
 export function Home() {
@@ -76,10 +86,12 @@ export function Home() {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((auction) => (
+          {list.map((auction) => {
+            const auctionId = auction.auctionId ?? auction.id
+            return (
             <Link
-              key={auction.id}
-              to={`/auctions/${auction.id}`}
+              key={auctionId}
+              to={`/auctions/${auctionId}`}
               className="group overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] transition hover:border-[var(--accent)]/50"
             >
               <div className="aspect-square bg-zinc-800">
@@ -108,12 +120,13 @@ export function Home() {
                 </p>
                 {auction.highestBid && (
                   <p className="mt-2 text-sm text-[var(--accent)]">
-                    当前最高: {auction.highestBid.amount} wei
+                    当前最高: {weiToEth(auction.highestBid.amount)}
                   </p>
                 )}
               </div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
