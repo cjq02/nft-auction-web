@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuctionList } from '../hooks/useAuction'
+import { useQueryClient } from '@tanstack/react-query'
 
 function formatTime(s: string) {
   const d = new Date(s)
@@ -12,7 +13,12 @@ function formatAddress(addr: string) {
 }
 
 export function Home() {
-  const { data, isLoading, error } = useAuctionList({ status: 'active', limit: 20 })
+  const queryClient = useQueryClient()
+  const { data, isLoading, isFetching, error } = useAuctionList({ status: 'active', limit: 20 })
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['auctions'] })
+  }
 
   if (isLoading) {
     return (
@@ -37,15 +43,30 @@ export function Home() {
     )
   }
 
-  const list = Array.isArray(data?.data)
-    ? data.data
-    : Array.isArray(data)
-      ? data
-      : []
+  const list = Array.isArray(data?.items) ? data.items : []
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-semibold text-white">进行中的拍卖</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-white">进行中的拍卖</h1>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isFetching}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-sm text-zinc-400 hover:border-[var(--accent)]/50 hover:text-white disabled:opacity-50"
+        >
+          <svg
+            className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {isFetching ? '刷新中…' : '刷新'}
+        </button>
+      </div>
       {list.length === 0 ? (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-12 text-center text-zinc-400">
           暂无拍卖，去

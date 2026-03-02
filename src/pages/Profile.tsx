@@ -21,7 +21,7 @@ export function Profile() {
           <div className="h-40 animate-pulse rounded-xl bg-[var(--card)]" />
         ) : error ? (
           <p className="text-red-400">加载失败: {(error as Error).message}</p>
-        ) : !data?.data?.length ? (
+        ) : !data?.items?.length ? (
           <p className="text-zinc-500">
             暂无拍卖，
             <Link to="/auctions/create" className="ml-1 text-[var(--accent)] hover:underline">
@@ -30,7 +30,7 @@ export function Profile() {
           </p>
         ) : (
           <ul className="space-y-3">
-            {data.data.map((auction) => (
+            {data.items.map((auction) => (
               <li key={auction.id}>
                 <Link
                   to={`/auctions/${auction.id}`}
