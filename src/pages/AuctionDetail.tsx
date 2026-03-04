@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import { useAuction, useAuctionBids } from '../hooks/useAuction'
 import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
+import { getContractRevertMessage } from '../utils/contractError'
 
 function formatAddress(addr: string | null | undefined) {
   if (!addr) return '-'
@@ -41,9 +42,9 @@ export function AuctionDetail() {
     error: bidError,
     isPending: bidPending,
     isSuccess: bidSuccess,
-  } = usePlaceBid(id)
-  const { endAuction, isPending: endPending, isSuccess: endSuccess } = useEndAuction(id)
-  const { cancelAuction, isPending: cancelPending } = useCancelAuction(id)
+  } = usePlaceBid(id, auction?.auctionContract)
+  const { endAuction, error: endError, isPending: endPending, isSuccess: endSuccess } = useEndAuction(id, auction?.auctionContract)
+  const { cancelAuction, error: cancelError, isPending: cancelPending } = useCancelAuction(id, auction?.auctionContract)
 
   const isSeller = address && auction?.seller?.toLowerCase() === address.toLowerCase()
   const statusLower = auction?.status?.toLowerCase()
@@ -161,31 +162,47 @@ export function AuctionDetail() {
                 </button>
               </div>
               {bidError && (
-                <p className="mt-2 text-sm text-red-400">{bidError.message}</p>
+                <p className="mt-2 text-sm text-red-400">
+                  {getContractRevertMessage(bidError)}
+                </p>
               )}
             </div>
           )}
 
           {isSeller && isActive && !hasBids && (
-            <button
-              type="button"
-              onClick={() => cancelAuction()}
-              disabled={cancelPending}
-              className="mt-6 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
-            >
-              {cancelPending ? '取消中...' : '取消拍卖'}
-            </button>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => cancelAuction()}
+                disabled={cancelPending}
+                className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-red-400 hover:bg-red-500/20 disabled:opacity-50"
+              >
+                {cancelPending ? '取消中...' : '取消拍卖'}
+              </button>
+              {cancelError && (
+                <p className="mt-2 text-sm text-red-400">
+                  {getContractRevertMessage(cancelError)}
+                </p>
+              )}
+            </div>
           )}
 
           {canEnd && (
-            <button
-              type="button"
-              onClick={() => endAuction()}
-              disabled={endPending}
-              className="mt-6 rounded-lg bg-[var(--accent)] px-4 py-2 font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
-            >
-              {endPending ? '处理中...' : '结束拍卖'}
-            </button>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => endAuction()}
+                disabled={endPending}
+                className="rounded-lg bg-[var(--accent)] px-4 py-2 font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              >
+                {endPending ? '处理中...' : '结束拍卖'}
+              </button>
+              {endError && (
+                <p className="mt-2 text-sm text-red-400">
+                  {getContractRevertMessage(endError)}
+                </p>
+              )}
+            </div>
           )}
 
           {ended && (

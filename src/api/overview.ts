@@ -8,6 +8,8 @@ export interface OverviewData {
   }
   nft: {
     totalSupply: number | null
+    burnedCount: number | null
+    currentSupply: number | null
     nextTokenId: number | null
   }
 }

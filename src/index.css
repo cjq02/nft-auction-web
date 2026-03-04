@@ -20,3 +20,36 @@ body {
   color: #fafafa;
   min-height: 100vh;
 }
+
+
+
+@layer base {
+  /* shadcn 语义变量：与现有深色主题一致（#0f0f12 / #18181c / #a78bfa） */
+  :root {
+    --background: 240 6% 6%;
+    --foreground: 0 0% 98%;
+    --card: 240 5% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 263 70% 75%;
+    --primary-foreground: 240 6% 6%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 45%;
+    --accent: 263 70% 75%;
+    --accent-foreground: 240 6% 6%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 263 70% 75%;
+    --chart-1: 263 70% 75%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
+  }
+}

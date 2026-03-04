@@ -67,11 +67,31 @@ export function ManageOverview() {
 
       <div>
         <h3 className="mb-3 text-sm font-medium text-zinc-400">NFT 合约</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="已铸造数量 (totalSupply)"
             value={nft.totalSupply ?? '—'}
-            sub={nft.totalSupply == null ? '未配置或链上读取失败' : undefined}
+            sub={
+              nft.totalSupply == null
+                ? '未配置或链上读取失败'
+                : '历史上铸造过的总数'
+            }
+          />
+          <StatCard
+            label="已销毁数量"
+            value={nft.burnedCount ?? '—'}
+            sub={nft.burnedCount == null ? '未配置或链上读取失败' : undefined}
+          />
+          <StatCard
+            label="当前存在数量"
+            value={nft.currentSupply ?? '—'}
+            sub={
+              nft.currentSupply != null
+                ? 'totalSupply − 已销毁'
+                : nft.totalSupply == null && nft.burnedCount == null
+                  ? '未配置或链上读取失败'
+                  : undefined
+            }
           />
           <StatCard
             label="下一 Token ID (nextTokenId)"

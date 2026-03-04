@@ -11,6 +11,7 @@ function toApiStatus(status: AuctionStatus): string {
 export interface AuctionListItem {
   id?: number
   auctionId: number
+  auctionContract?: string  // 拍卖合约地址，多合约时用于出价/结束/取消
   seller: string
   nftContract: string
   tokenId: number
@@ -39,6 +40,7 @@ export interface ListParams {
   page?: number
   limit?: number
   status?: AuctionStatus
+  contract?: string  // 按拍卖合约地址筛选
 }
 
 export interface ListResponse<T> {
@@ -53,27 +55,37 @@ export function fetchAuctionList(params?: ListParams) {
   if (params?.page != null) search.set('page', String(params.page))
   if (params?.limit != null) search.set('limit', String(params.limit))
   if (params?.status) search.set('status', toApiStatus(params.status))
+  if (params?.contract) search.set('contract', params.contract)
   const q = search.toString()
   return api
     .get<{ code: number; data: ListResponse<AuctionListItem> }>(`/api/auctions${q ? `?${q}` : ''}`)
     .then((res) => res.data)
 }
 
-export function fetchAuctionById(id: string) {
+export function fetchAuctionById(id: string, contract?: string) {
+  const search = new URLSearchParams()
+  if (contract) search.set('contract', contract)
+  const q = search.toString()
   return api
-    .get<{ code: number; data: AuctionDetail }>(`/api/auctions/${id}`)
+    .get<{ code: number; data: AuctionDetail }>(`/api/auctions/${id}${q ? `?${q}` : ''}`)
     .then((res) => res.data)
 }
 
-export function fetchAuctionBids(id: string) {
+export function fetchAuctionBids(id: string, contract?: string) {
+  const search = new URLSearchParams()
+  if (contract) search.set('contract', contract)
+  const q = search.toString()
   return api
-    .get<{ code: number; data: { bids: BidItem[] } }>(`/api/auctions/${id}/bids`)
+    .get<{ code: number; data: { bids: BidItem[] } }>(`/api/auctions/${id}/bids${q ? `?${q}` : ''}`)
     .then((res) => res.data?.bids ?? [])
 }
 
-export function fetchUserAuctions(address: string) {
+export function fetchUserAuctions(address: string, contract?: string) {
+  const search = new URLSearchParams()
+  if (contract) search.set('contract', contract)
+  const q = search.toString()
   return api
-    .get<{ code: number; data: ListResponse<AuctionListItem> }>(`/api/users/${address}/auctions`)
+    .get<{ code: number; data: ListResponse<AuctionListItem> }>(`/api/users/${address}/auctions${q ? `?${q}` : ''}`)
     .then((res) => res.data)
 }
 

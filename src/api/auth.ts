@@ -50,6 +50,13 @@ export interface UpdateProfileBody {
   email?: string  // 传 "" 表示清空
 }
 
+/** GET /api/users/list — 用户列表（用户名+钱包地址），供铸造页下拉等 */
+export function fetchUserList() {
+  return api
+    .get<{ code: number; data: { list: UserInfo[] } }>('/api/users/list')
+    .then((res) => res.data?.list ?? [])
+}
+
 /** PATCH /api/users/me — 修改用户名/邮箱 */
 export function updateProfile(body: UpdateProfileBody) {
   return api

@@ -3,10 +3,18 @@ import { useQueryClient } from '@tanstack/react-query'
 import { auctionAbi, erc20Abi } from '../contracts/abi'
 import { AUCTION_CONTRACT_ADDRESS } from '../contracts/addresses'
 
-export function usePlaceBid(auctionId: string | undefined) {
+function resolveAuctionAddress(contractAddress: string | undefined): `0x${string}` {
+  if (contractAddress && contractAddress.trim() !== '') {
+    return contractAddress as `0x${string}`
+  }
+  return AUCTION_CONTRACT_ADDRESS
+}
+
+export function usePlaceBid(auctionId: string | undefined, contractAddress?: string) {
   const queryClient = useQueryClient()
   const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const address = resolveAuctionAddress(contractAddress)
 
   // 部分 RPC（如 Infura）单笔 tx gas 上限为 16,777,216，不设 gas 时 viem/钱包可能用 21e6 导致被拒
   const GAS_CAP = 16_000_000n
@@ -14,7 +22,7 @@ export function usePlaceBid(auctionId: string | undefined) {
   const placeBidEth = (valueWei: bigint) => {
     if (!auctionId) return
     writeContract({
-      address: AUCTION_CONTRACT_ADDRESS,
+      address,
       abi: auctionAbi,
       functionName: 'placeBid',
       args: [BigInt(auctionId)],
@@ -26,7 +34,7 @@ export function usePlaceBid(auctionId: string | undefined) {
   const placeBidToken = (amountWei: bigint, _tokenAddress: `0x${string}`) => {
     if (!auctionId) return
     writeContract({
-      address: AUCTION_CONTRACT_ADDRESS,
+      address,
       abi: auctionAbi,
       functionName: 'placeBidWithToken',
       args: [BigInt(auctionId), amountWei],
@@ -39,7 +47,7 @@ export function usePlaceBid(auctionId: string | undefined) {
       address: tokenAddress,
       abi: erc20Abi,
       functionName: 'approve',
-      args: [AUCTION_CONTRACT_ADDRESS, amountWei],
+      args: [address, amountWei],
     })
   }
 
@@ -59,15 +67,16 @@ export function usePlaceBid(auctionId: string | undefined) {
   }
 }
 
-export function useEndAuction(auctionId: string | undefined) {
+export function useEndAuction(auctionId: string | undefined, contractAddress?: string) {
   const queryClient = useQueryClient()
   const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const address = resolveAuctionAddress(contractAddress)
 
   const endAuction = () => {
     if (!auctionId) return
     writeContract({
-      address: AUCTION_CONTRACT_ADDRESS,
+      address,
       abi: auctionAbi,
       functionName: 'endAuction',
       args: [BigInt(auctionId)],
@@ -83,15 +92,16 @@ export function useEndAuction(auctionId: string | undefined) {
   return { endAuction, hash, error: writeError, isPending: isPending || isConfirming, isSuccess }
 }
 
-export function useCancelAuction(auctionId: string | undefined) {
+export function useCancelAuction(auctionId: string | undefined, contractAddress?: string) {
   const queryClient = useQueryClient()
   const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const address = resolveAuctionAddress(contractAddress)
 
   const cancelAuction = () => {
     if (!auctionId) return
     writeContract({
-      address: AUCTION_CONTRACT_ADDRESS,
+      address,
       abi: auctionAbi,
       functionName: 'cancelAuction',
       args: [BigInt(auctionId)],
