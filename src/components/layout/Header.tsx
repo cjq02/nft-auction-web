@@ -38,6 +38,7 @@ export function Header() {
   const handleDisconnect = () => {
     logout()
     disconnect()
+    navigate('/', { replace: true })
   }
 
   return (

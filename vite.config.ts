@@ -9,6 +9,7 @@ export default defineConfig({
   },
   server: {
     port: 3080,
-    host: true, // 允许通过本机 IP（如 192.168.31.10:3080）访问
+    host: '0.0.0.0', // 允许通过本机 IP（如 10.255.255.254:3080）访问，WSL2 下更稳定
+    strictPort: false,
   },
 })
