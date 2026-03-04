@@ -8,6 +8,9 @@ export function usePlaceBid(auctionId: string | undefined) {
   const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
+  // 部分 RPC（如 Infura）单笔 tx gas 上限为 16,777,216，不设 gas 时 viem/钱包可能用 21e6 导致被拒
+  const GAS_CAP = 16_000_000n
+
   const placeBidEth = (valueWei: bigint) => {
     if (!auctionId) return
     writeContract({
@@ -16,6 +19,7 @@ export function usePlaceBid(auctionId: string | undefined) {
       functionName: 'placeBid',
       args: [BigInt(auctionId)],
       value: valueWei,
+      gas: GAS_CAP,
     })
   }
 
@@ -26,6 +30,7 @@ export function usePlaceBid(auctionId: string | undefined) {
       abi: auctionAbi,
       functionName: 'placeBidWithToken',
       args: [BigInt(auctionId), amountWei],
+      gas: GAS_CAP,
     })
   }
 
@@ -66,6 +71,7 @@ export function useEndAuction(auctionId: string | undefined) {
       abi: auctionAbi,
       functionName: 'endAuction',
       args: [BigInt(auctionId)],
+      gas: 16_000_000n,
     })
   }
 
@@ -89,6 +95,7 @@ export function useCancelAuction(auctionId: string | undefined) {
       abi: auctionAbi,
       functionName: 'cancelAuction',
       args: [BigInt(auctionId)],
+      gas: 16_000_000n,
     })
   }
 

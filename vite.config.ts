@@ -5,5 +5,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3080,
+    host: true, // 允许通过本机 IP（如 192.168.31.10:3080）访问
   },
 })

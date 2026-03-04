@@ -57,9 +57,15 @@ function NftCard({ item }: { item: MintedNftItem }) {
         <div>
           <p className="text-xs text-zinc-500">接收账户（当前持有人）</p>
           <div className="mt-0.5 flex items-center gap-1">
-            <span className="font-mono text-sm text-zinc-300 truncate" title={item.owner}>
-              {formatAddress(item.owner)}
-            </span>
+            {item.ownerName ? (
+              <span className="text-sm text-white font-medium truncate" title={item.owner}>
+                {item.ownerName}
+              </span>
+            ) : (
+              <span className="font-mono text-sm text-zinc-300 truncate" title={item.owner}>
+                {formatAddress(item.owner)}
+              </span>
+            )}
             <CopyButton text={item.owner} label="地址" />
           </div>
         </div>

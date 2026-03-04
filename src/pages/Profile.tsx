@@ -22,6 +22,25 @@ function weiToEth(wei: string) {
   try { return `${formatEther(BigInt(wei))} ETH` } catch { return wei }
 }
 
+function normalizeAuctionStatus(status?: string, endTime?: number | string | null) {
+  if (status === 'Active' || status === 'Ended' || status === 'Cancelled') return status
+  const end = typeof endTime === 'number' ? endTime : Number(endTime ?? 0)
+  if (!end || Number.isNaN(end)) return 'Active'
+  return Date.now() / 1000 >= end ? 'Ended' : 'Active'
+}
+
+function StatusBadge({ status }: { status?: string }) {
+  const s = status === 'Ended' || status === 'Cancelled' || status === 'Active' ? status : 'Active'
+  const cls =
+    s === 'Active'
+      ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300'
+      : s === 'Ended'
+        ? 'border-zinc-500/30 bg-zinc-500/15 text-zinc-300'
+        : 'border-amber-500/30 bg-amber-500/15 text-amber-300'
+  const label = s === 'Active' ? '进行中' : s === 'Ended' ? '已结束' : '已取消'
+  return <span className={`rounded-full border px-2 py-0.5 text-xs ${cls}`}>{label}</span>
+}
+
 export function Profile() {
   const { address } = useAccount()
   const { user, isNewUser, updateProfile, updateProfilePending, updateProfileError } = useAuth()
@@ -146,18 +165,20 @@ export function Profile() {
               <ul className="space-y-3">
                 {data.items.map((auction) => {
                   const auctionId = auction.auctionId ?? auction.id
+                  const status = normalizeAuctionStatus(auction.status, auction.endTime)
                   return (
                     <li key={auctionId}>
                       <Link
                         to={`/auctions/${auctionId}`}
                         className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 transition hover:border-[var(--accent)]/50"
                       >
-                        <div>
+                        <div className="flex items-center gap-2">
                           <span className="font-medium text-white">
                             {auction.nft?.name ?? `#${auction.tokenId}`}
                           </span>
-                          <span className="ml-2 text-sm text-zinc-500">
-                            {auction.status} · 结束 {formatTime(auction.endTime)}
+                          <StatusBadge status={status} />
+                          <span className="text-sm text-zinc-500">
+                            结束 {formatTime(auction.endTime)}
                           </span>
                         </div>
                         <span className="text-sm text-zinc-400">

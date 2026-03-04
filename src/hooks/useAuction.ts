@@ -6,6 +6,11 @@ import { AUCTION_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS } from '../contracts/add
 import * as auctionApi from '../api/auction'
 import type { ListParams } from '../api/auction'
 
+// How long to wait after tx confirmation before refreshing the auction list.
+// The backend event listener (WebSocket) typically indexes within 1-2 seconds
+// of the block being mined; 5s gives a comfortable buffer.
+const INDEXER_SETTLE_MS = 5_000
+
 export function useAuctionList(params?: ListParams) {
   return useQuery({
     queryKey: ['auctions', params],
@@ -62,16 +67,15 @@ export function useCreateAuction() {
   const { isLoading: isCreateConfirming, isSuccess: isCreateSuccess } =
     useWaitForTransactionReceipt({ hash: createHash })
 
-  // 仅 createAuction 交易确认后，才向后端上报 txHash 写库
+  // 交易确认后，等待后端事件监听器索引完成，再刷新列表
   useEffect(() => {
     if (!isCreateSuccess || !createHash) return
 
-    auctionApi
-      .postSyncAuction(createHash)
-      .catch((err) => console.error('[useCreateAuction] 同步拍卖到后端失败', err))
-      .finally(() => {
-        queryClient.invalidateQueries({ queryKey: ['auctions'] })
-      })
+    const timer = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['auctions'] })
+    }, INDEXER_SETTLE_MS)
+
+    return () => clearTimeout(timer)
   }, [isCreateSuccess, createHash, queryClient])
 
   const approveNft = (tokenId: bigint, nftContract: `0x${string}` = NFT_CONTRACT_ADDRESS) => {

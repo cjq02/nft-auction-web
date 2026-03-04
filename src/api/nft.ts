@@ -3,6 +3,7 @@ import { api } from './client'
 export interface MintedNftItem {
   tokenId: number
   owner: string
+  ownerName?: string | null
   tokenUri?: string | null
   name?: string | null
   description?: string | null
