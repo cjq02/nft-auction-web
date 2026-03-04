@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
@@ -55,12 +55,16 @@ export function AuctionDetail() {
   const handleBid = () => {
     const wei = parseEther(bidAmount)
     placeBidEth(wei)
-    setBidAmount('')
   }
 
-  if (bidSuccess) {
-    setTimeout(() => navigate(0), 500)
-  }
+  useEffect(() => {
+    if (bidSuccess) {
+      setBidAmount('')
+      const t = setTimeout(() => navigate(0), 500)
+      return () => clearTimeout(t)
+    }
+  }, [bidSuccess, navigate])
+
   if (endSuccess) {
     setTimeout(() => navigate(0), 500)
   }
