@@ -187,7 +187,7 @@ export function AuctionDetail() {
             </div>
           )}
 
-          {canEnd && (
+          {canEnd && isSeller && (
             <div className="mt-6">
               <button
                 type="button"
@@ -222,7 +222,9 @@ export function AuctionDetail() {
                 key={i}
                 className="flex justify-between text-sm"
               >
-                <span className="font-mono text-zinc-300">{formatAddress(bid.bidder)}</span>
+                <span className="text-zinc-300" title={bid.bidder}>
+                  {bid.bidderName ?? formatAddress(bid.bidder)}
+                </span>
                 <span className="text-[var(--accent)]">{weiToEth(bid.amount)}</span>
                 <span className="text-zinc-500">{formatTime(bid.timestamp)}</span>
               </li>

@@ -31,6 +31,7 @@ export interface AuctionDetail extends AuctionListItem {
 export interface BidItem {
   id?: number
   bidder: string
+  bidderName?: string  // 账户名称（已注册用户）
   amount: string
   timestamp: string
   isETH: boolean
