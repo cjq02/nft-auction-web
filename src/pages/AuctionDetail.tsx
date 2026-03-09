@@ -4,7 +4,9 @@ import { useAccount } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 import { useAuction, useAuctionBids } from '../hooks/useAuction'
 import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
-import { getContractRevertMessage } from '../utils/contractError'
+import { useToast } from '../hooks/use-toast'
+import { getContractRevertMessage, getShortRevertReason } from '../utils/contractError'
+import { toDisplayImageUrl } from '../utils/ipfs'
 
 function formatAddress(addr: string | null | undefined) {
   if (!addr) return '-'
@@ -33,6 +35,7 @@ export function AuctionDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { address } = useAccount()
+  const { toast } = useToast()
   const [bidAmount, setBidAmount] = useState('')
 
   const { data: auction, isLoading, error } = useAuction(id)
@@ -66,6 +69,16 @@ export function AuctionDetail() {
     }
   }, [bidSuccess, navigate])
 
+  useEffect(() => {
+    if (bidError) {
+      toast({
+        variant: 'destructive',
+        title: '出价失败',
+        description: getShortRevertReason(bidError),
+      })
+    }
+  }, [bidError, toast])
+
   if (endSuccess) {
     setTimeout(() => navigate(0), 500)
   }
@@ -93,9 +106,11 @@ export function AuctionDetail() {
           <div className="aspect-square bg-zinc-800">
             {auction.nft?.image ? (
               <img
-                src={auction.nft.image}
+                src={toDisplayImageUrl(auction.nft.image) ?? auction.nft.image}
                 alt={auction.nft.name ?? 'NFT'}
                 className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-6xl text-zinc-600">
@@ -116,7 +131,9 @@ export function AuctionDetail() {
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">卖家</dt>
-              <dd className="font-mono text-white">{formatAddress(auction.seller)}</dd>
+              <dd className="text-white" title={auction.seller}>
+                {auction.sellerName ?? formatAddress(auction.seller)}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">开始时间</dt>
@@ -163,7 +180,7 @@ export function AuctionDetail() {
               </div>
               {bidError && (
                 <p className="mt-2 text-sm text-red-400">
-                  {getContractRevertMessage(bidError)}
+                  {getShortRevertReason(bidError)}
                 </p>
               )}
             </div>

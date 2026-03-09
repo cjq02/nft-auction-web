@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { formatEther } from 'viem'
 import { useAuctionList } from '../hooks/useAuction'
 import { useQueryClient } from '@tanstack/react-query'
+import { toDisplayImageUrl } from '../utils/ipfs'
 
 function formatTime(ts: number | string | null | undefined) {
   if (!ts) return '-'
@@ -97,9 +98,11 @@ export function Home() {
               <div className="aspect-square bg-zinc-800">
                 {auction.nft?.image ? (
                   <img
-                    src={auction.nft.image}
+                    src={toDisplayImageUrl(auction.nft.image) ?? auction.nft.image}
                     alt={auction.nft.name ?? 'NFT'}
                     className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-4xl text-zinc-600">

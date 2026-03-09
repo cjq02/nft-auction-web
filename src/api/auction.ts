@@ -13,6 +13,7 @@ export interface AuctionListItem {
   auctionId: number
   auctionContract?: string  // 拍卖合约地址，多合约时用于出价/结束/取消
   seller: string
+  sellerName?: string  // 卖家账户名称（已注册用户）
   nftContract: string
   tokenId: number
   startTime: number

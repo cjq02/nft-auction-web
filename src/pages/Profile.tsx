@@ -217,6 +217,8 @@ export function Profile() {
                                 src={imageUrl}
                                 alt={item.name ?? `#${item.tokenId}`}
                                 className="h-full w-full object-cover"
+                                loading="lazy"
+                                decoding="async"
                               />
                             ) : (
                               <div className="flex h-full items-center justify-center text-3xl text-zinc-600">

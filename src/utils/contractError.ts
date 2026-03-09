@@ -33,3 +33,23 @@ export function getContractRevertMessage(error: unknown): string {
 
   return msg
 }
+
+/** 从长错误文案中只保留简短 revert 原因，去掉 Raw Call、地址、gas 等调试信息；用于 toast 等友好展示 */
+export function getShortRevertReason(error: unknown): string {
+  const raw = getContractRevertMessage(error) || (error && typeof (error as Error).message === 'string' ? (error as Error).message : String(error ?? ''))
+  if (!raw || raw.length < 100) return raw.trim() || 'Transaction failed.'
+
+  // 优先取 "reason: ..." 或 "reverted: ..." 后的一句（到句号或行末）
+  const reasonMatch = raw.match(/(?:reverted with reason|execution reverted):\s*([^.]+\.?)\s*/i)
+  if (reasonMatch) return reasonMatch[1].trim() || raw
+
+  // 否则截断：去掉 "Raw Call Arguments" 及之后的内容
+  const beforeRaw = raw.split(/\s*Raw Call Arguments\s*/i)[0].trim()
+  if (beforeRaw.length > 0 && beforeRaw.length < raw.length) return beforeRaw.length > 120 ? beforeRaw.slice(0, 120) + '…' : beforeRaw
+
+  // 或去掉 "Details:" 及之后
+  const beforeDetails = raw.split(/\s*Details:\s*/i)[0].trim()
+  if (beforeDetails.length > 0 && beforeDetails.length < raw.length) return beforeDetails.length > 120 ? beforeDetails.slice(0, 120) + '…' : beforeDetails
+
+  return raw.length > 120 ? raw.slice(0, 120) + '…' : raw
+}

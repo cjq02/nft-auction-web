@@ -13,7 +13,12 @@ function resolveAuctionAddress(contractAddress: string | undefined): `0x${string
 export function usePlaceBid(auctionId: string | undefined, contractAddress?: string) {
   const queryClient = useQueryClient()
   const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+  const {
+    isLoading: isConfirming,
+    isSuccess,
+    isError: isReceiptError,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({ hash, query: { retry: 0 } })
   const address = resolveAuctionAddress(contractAddress)
 
   // 部分 RPC（如 Infura）单笔 tx gas 上限为 16,777,216，不设 gas 时 viem/钱包可能用 21e6 导致被拒
@@ -61,7 +66,7 @@ export function usePlaceBid(auctionId: string | undefined, contractAddress?: str
     placeBidToken,
     approveToken,
     hash,
-    error: writeError,
+    error: writeError ?? receiptError,
     isPending: isPending || isConfirming,
     isSuccess,
   }
