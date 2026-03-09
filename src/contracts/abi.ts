@@ -68,6 +68,13 @@ export const auctionAbi = [
   },
   {
     type: 'function',
+    name: 'ethPriceFeed',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'getHighestBid',
     inputs: [{ name: 'auctionId', type: 'uint256', internalType: 'uint256' }],
     outputs: [
@@ -82,6 +89,23 @@ export const auctionAbi = [
           { name: 'isETH', type: 'bool', internalType: 'bool' },
         ],
       },
+    ],
+    stateMutability: 'view',
+  },
+] as const
+
+/** Chainlink AggregatorV3Interface：用于读取 ETH/USD 价格（8 位小数） */
+export const chainlinkAggregatorAbi = [
+  {
+    type: 'function',
+    name: 'latestRoundData',
+    inputs: [],
+    outputs: [
+      { name: 'roundId', type: 'uint80', internalType: 'uint80' },
+      { name: 'answer', type: 'int256', internalType: 'int256' },
+      { name: 'startedAt', type: 'uint256', internalType: 'uint256' },
+      { name: 'updatedAt', type: 'uint256', internalType: 'uint256' },
+      { name: 'answeredInRound', type: 'uint80', internalType: 'uint80' },
     ],
     stateMutability: 'view',
   },

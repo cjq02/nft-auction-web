@@ -19,6 +19,7 @@ export interface AuctionListItem {
   startTime: number
   endTime: number
   minBid: string
+  minBidEth?: string  // 后端按链上价格换算的 ETH 展示（仅详情接口返回）
   paymentToken: string | null
   status: string          // 后端返回 "Active" / "Ended" / "Cancelled"
   nft?: { name?: string; image?: string; description?: string; tokenURI?: string }

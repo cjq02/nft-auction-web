@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { parseEther } from 'viem'
+import { parseUnits } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { useCreateAuction } from '../hooks/useAuction'
@@ -73,7 +73,7 @@ export function CreateAuction() {
 
   // Step 2 state
   const [durationDays, setDurationDays] = useState('7')
-  const [minBidEth, setMinBidEth] = useState('')
+  const [minBidUsd, setMinBidUsd] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
   const [step, setStep] = useState<Step>('approve')
@@ -140,18 +140,23 @@ export function CreateAuction() {
     setFormError(null)
     try {
       const durationSec = BigInt(Number(durationDays) * 24 * 60 * 60)
-      const minBidWei = parseEther(minBidEth.trim())
+      // 最低出价单位为美元，合约要求 18 位小数
+      const minBidUSD = parseUnits(minBidUsd.trim(), 18)
+      if (minBidUSD === 0n) {
+        setFormError('请输入大于 0 的最低出价')
+        return
+      }
       create({
         nftContract: nftContract as `0x${string}`,
         tokenId: BigInt(tokenId),
         duration: durationSec,
-        minBidUSD: minBidWei,
+        minBidUSD,
         paymentToken: PAYMENT_ETH,
       })
     } catch (e) {
       setFormError(
         (e as Error).message?.includes('fraction')
-          ? '请输入有效的 ETH 数量'
+          ? '请输入有效的金额（例如 100 或 99.5）'
           : (e as Error).message || '无效输入',
       )
     }
@@ -242,12 +247,12 @@ export function CreateAuction() {
             </div>
 
             <div>
-              <label className="block text-sm text-zinc-400">最低出价 (ETH)</label>
+              <label className="block text-sm text-zinc-400">最低出价 (USD)</label>
               <input
                 type="text"
-                value={minBidEth}
-                onChange={(e) => setMinBidEth(e.target.value)}
-                placeholder="0.01"
+                value={minBidUsd}
+                onChange={(e) => setMinBidUsd(e.target.value)}
+                placeholder="100"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
               />
             </div>
@@ -269,7 +274,7 @@ export function CreateAuction() {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={isCreatePending || !minBidEth.trim()}
+                disabled={isCreatePending || !minBidUsd.trim()}
                 className="flex-1 rounded-lg bg-[var(--accent)] py-2 font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
                 {isCreatePending ? '等待钱包确认...' : '创建拍卖'}

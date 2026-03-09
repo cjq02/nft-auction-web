@@ -9,6 +9,7 @@ import { ConnectGuard } from '../components/common/ConnectGuard'
 import { fetchMyNfts } from '../api/nft'
 import { NFT_CONTRACT_ADDRESS } from '../contracts/addresses'
 import { toDisplayImageUrl } from '../utils/ipfs'
+import { minBidDisplayFromApi } from '../utils/auctionDisplay'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -182,7 +183,10 @@ export function Profile() {
                           </span>
                         </div>
                         <span className="text-sm text-zinc-400">
-                          {weiToEth(auction.minBid)}
+                          {(() => {
+                            const { usd, eth } = minBidDisplayFromApi(auction.minBid, auction.minBidEth)
+                            return eth === '—' ? usd : `${usd} · ${eth}`
+                          })()}
                         </span>
                       </Link>
                     </li>

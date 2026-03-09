@@ -7,6 +7,7 @@ import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
 import { useToast } from '../hooks/use-toast'
 import { getContractRevertMessage, getShortRevertReason } from '../utils/contractError'
 import { toDisplayImageUrl } from '../utils/ipfs'
+import { minBidDisplayFromApi } from '../utils/auctionDisplay'
 
 function formatAddress(addr: string | null | undefined) {
   if (!addr) return '-'
@@ -143,9 +144,19 @@ export function AuctionDetail() {
               <dt className="text-zinc-500">结束时间</dt>
               <dd className="text-white">{formatTime(auction.endTime)}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-zinc-500">最低出价</dt>
-              <dd className="text-white">{weiToEth(auction.minBid)}</dd>
+            <div className="flex justify-between gap-4">
+              <dt className="shrink-0 text-zinc-500">最低出价</dt>
+              <dd className="min-w-0 shrink-0 text-right text-white">
+                {(() => {
+                  const { usd, eth } = minBidDisplayFromApi(auction.minBid, auction.minBidEth)
+                  return (
+                    <span className="block">
+                      <span className="block">{usd}</span>
+                      <span className="block text-white">{eth}</span>
+                    </span>
+                  )
+                })()}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-zinc-500">支付方式</dt>
