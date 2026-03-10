@@ -7,9 +7,10 @@ import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
 import { useToast } from '../hooks/use-toast'
 import { getContractRevertMessage, getShortRevertReason } from '../utils/contractError'
 import { toDisplayImageUrl } from '../utils/ipfs'
-import { minBidDisplayFromApi } from '../utils/auctionDisplay'
+import { minBidDisplayFromApi, minBidInTokenDisplay } from '../utils/auctionDisplay'
 import { isEthPayment, getTokenByAddress } from '../config/supportedTokens'
 import { useTokenApproval } from '../hooks/useTokenApproval'
+import { useTokenPrice } from '../hooks/useTokenPrice'
 import { AUCTION_CONTRACT_ADDRESS } from '../contracts/addresses'
 
 function formatAddress(addr: string | null | undefined) {
@@ -65,6 +66,9 @@ export function AuctionDetail() {
   const isEthAuction = isEthPayment(auction?.paymentToken)
   const paymentToken = getTokenByAddress(auction?.paymentToken ?? null)
   const auctionContract = (auction?.auctionContract || AUCTION_CONTRACT_ADDRESS) as `0x${string}`
+  const { tokenPrice8 } = useTokenPrice(
+    !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined
+  )
   const { approve: approveTokenUnlimited, isApproved: isTokenApproved } = useTokenApproval(
     !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined,
     auctionContract
@@ -172,16 +176,21 @@ export function AuctionDetail() {
               <dd className="min-w-0 shrink-0 text-right text-white">
                 {(() => {
                   const { usd, eth } = minBidDisplayFromApi(auction.minBid, auction.minBidEth)
+                  const tokenAmount = minBidInTokenDisplay(auction.minBid, tokenPrice8)
                   return (
                     <span className="block">
-                      <span className="block">{usd}</span>
-                      {isEthAuction && eth !== '—' && (
-                        <span className="block text-white">{eth}</span>
-                      )}
-                      {!isEthAuction && (
-                        <span className="block text-zinc-400">
-                          以 {paymentToken?.symbol ?? '代币'} 出价
-                        </span>
+                      {isEthAuction ? (
+                        <>
+                          <span className="block">{usd}</span>
+                          {eth !== '—' && <span className="block text-white">{eth}</span>}
+                        </>
+                      ) : (
+                        <>
+                          <span className="block">
+                            {tokenAmount !== '—' ? `${tokenAmount} ${paymentToken?.symbol ?? '代币'}` : `以 ${paymentToken?.symbol ?? '代币'} 出价`}
+                          </span>
+                          <span className="block text-zinc-400">{usd}</span>
+                        </>
                       )}
                     </span>
                   )

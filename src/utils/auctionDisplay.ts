@@ -1,4 +1,4 @@
-import { formatEther } from 'viem'
+import { formatEther, formatUnits } from 'viem'
 
 function weiToEth(wei: string | null | undefined): string {
   if (!wei) return '-'
@@ -110,5 +110,50 @@ export function minBidDisplayFromApi(
     return { usd, eth }
   } catch {
     return { usd: minBid, eth: '—' }
+  }
+}
+
+/**
+ * 最低出价 USD（18 位小数字符串）按链上 ETH 价格换算为 ETH 展示（创建拍卖页用）
+ * 与合约一致：ethWei = minBidUSD * 1e8 / ethPrice8
+ */
+export function minBidUsdToEthDisplay(
+  minBidUsdWeiStr: string | null | undefined,
+  ethPrice8: bigint | undefined
+): string {
+  if (!minBidUsdWeiStr || !ethPrice8 || ethPrice8 === 0n) return '—'
+  try {
+    const minBidUSD = BigInt(minBidUsdWeiStr)
+    const ethWei = (minBidUSD * (10n ** 8n)) / ethPrice8
+    const raw = formatEther(ethWei)
+    const num = Number(raw)
+    if (Number.isNaN(num) || num < 0) return '—'
+    return num.toFixed(4)
+  } catch {
+    return '—'
+  }
+}
+
+/**
+ * 代币拍卖时：用链上价格把 minBid（USD，18 位小数）换算为代币数量展示
+ * 与合约 PriceConverter 一致：tokenAmountWei = minBidUSD * 1e8 / tokenPrice8
+ */
+/** 代币数量展示保留的小数位数（如 CNH 保留 2 位） */
+const TOKEN_AMOUNT_DECIMALS = 2
+
+export function minBidInTokenDisplay(
+  minBid: string | null | undefined,
+  tokenPrice8: bigint | undefined
+): string {
+  if (!minBid || !tokenPrice8 || tokenPrice8 === 0n) return '—'
+  try {
+    const minBidUSD = BigInt(minBid)
+    const tokenAmountWei = (minBidUSD * (10n ** 8n)) / tokenPrice8
+    const raw = formatUnits(tokenAmountWei, 18)
+    const num = Number(raw)
+    if (Number.isNaN(num)) return '—'
+    return num.toFixed(TOKEN_AMOUNT_DECIMALS)
+  } catch {
+    return '—'
   }
 }

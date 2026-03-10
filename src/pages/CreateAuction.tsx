@@ -9,6 +9,9 @@ import { NFT_CONTRACT_ADDRESS, AUCTION_CONTRACT_ADDRESS } from '../contracts/add
 import { erc721Abi } from '../contracts/abi'
 import { fetchNftList } from '../api/nft'
 import { PAYMENT_ETH, SUPPORTED_TOKENS } from '../config/supportedTokens'
+import { useEthPrice } from '../hooks/useEthPrice'
+import { useTokenPrice } from '../hooks/useTokenPrice'
+import { minBidUsdToEthDisplay, minBidInTokenDisplay } from '../utils/auctionDisplay'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -79,6 +82,11 @@ export function CreateAuction() {
   const [formError, setFormError] = useState<string | null>(null)
 
   const [step, setStep] = useState<Step>('approve')
+
+  const { ethPrice8 } = useEthPrice()
+  const { tokenPrice8 } = useTokenPrice(
+    paymentType === 'erc20' && selectedTokenAddress ? (selectedTokenAddress as `0x${string}`) : undefined
+  )
 
   // Fetch user's NFT list for dropdown
   const contractForList = NFT_CONTRACT_ADDRESS !== ZERO_ADDRESS ? NFT_CONTRACT_ADDRESS : undefined
@@ -265,6 +273,22 @@ export function CreateAuction() {
                 placeholder="100"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
               />
+              {minBidUsd.trim() && (() => {
+                try {
+                  const minBidWeiStr = parseUnits(minBidUsd.trim(), 18).toString()
+                  if (paymentType === 'eth') {
+                    const eth = minBidUsdToEthDisplay(minBidWeiStr, ethPrice8)
+                    if (eth !== '—') return <p className="mt-1 text-xs text-zinc-500">≈ {eth} ETH</p>
+                  } else if (selectedTokenAddress) {
+                    const tokenAmount = minBidInTokenDisplay(minBidWeiStr, tokenPrice8)
+                    const symbol = SUPPORTED_TOKENS.find((t) => t.address === selectedTokenAddress)?.symbol ?? '代币'
+                    if (tokenAmount !== '—') return <p className="mt-1 text-xs text-zinc-500">≈ {tokenAmount} {symbol}</p>
+                  }
+                } catch {
+                  /* 输入非有效数字时不显示 */
+                }
+                return null
+              })()}
             </div>
 
             <div>
