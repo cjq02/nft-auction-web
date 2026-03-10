@@ -1,10 +1,17 @@
 /**
  * 支持的 ERC20 出价代币配置
  * 合约需已通过 setTokenPriceFeed 设置价格预言机
- * 可通过 VITE_SUPPORTED_TOKENS 环境变量覆盖（JSON 数组）
+ *
+ * 配置方式（二选一，推荐方式 1）：
+ * 1. 编辑同目录下 supported-tokens.default.json（多行 JSON，易读易改）
+ * 2. 设置环境变量 VITE_SUPPORTED_TOKENS 覆盖（JSON 数组字符串）
+ *
+ * 字段说明：
  * faucetMinEth: 可选，有此字段时代币支持用 ETH 充值（调用 mint() payable）
  * adminMint: 可选，为 true 时表示仅管理员（合约 owner）可铸造，管理页「代币铸造」中可选该代币
  */
+import defaultTokensJson from './supported-tokens.default.json'
+
 export interface SupportedToken {
   address: `0x${string}`
   symbol: string
@@ -15,40 +22,42 @@ export interface SupportedToken {
   adminMint?: boolean
 }
 
+type RawToken = {
+  address: string
+  symbol: string
+  decimals?: number
+  faucetMinEth?: string
+  adminMint?: boolean
+}
+
+function normalizeTokens(arr: RawToken[]): SupportedToken[] {
+  return arr.map((t) => ({
+    address: t.address as `0x${string}`,
+    symbol: t.symbol,
+    decimals: t.decimals ?? 18,
+    faucetMinEth: t.faucetMinEth,
+    adminMint: t.adminMint === true,
+  }))
+}
+
 const ZERO = '0x0000000000000000000000000000000000000000' as `0x${string}`
 
 /** 合约要求 ERC20 必须为 18 位小数 */
 export const REQUIRED_DECIMALS = 18
 
-/** 默认支持的代币（Sepolia 等测试网示例，需根据实际部署调整，合约要求 decimals=18） */
-const DEFAULT_TOKENS: SupportedToken[] = [
-  // 示例：{ address: '0x...' as `0x${string}`, symbol: 'USDC', decimals: 18 },
-]
-
-function parseEnvTokens(): SupportedToken[] {
-  try {
-    const raw = import.meta.env.VITE_SUPPORTED_TOKENS
-    if (!raw || typeof raw !== 'string') return DEFAULT_TOKENS
-    const arr = JSON.parse(raw) as Array<{
-      address: string
-      symbol: string
-      decimals?: number
-      faucetMinEth?: string
-      adminMint?: boolean
-    }>
-    return arr.map((t) => ({
-      address: t.address as `0x${string}`,
-      symbol: t.symbol,
-      decimals: t.decimals ?? 18,
-      faucetMinEth: t.faucetMinEth,
-      adminMint: t.adminMint === true,
-    }))
-  } catch {
-    return DEFAULT_TOKENS
+function loadSupportedTokens(): SupportedToken[] {
+  const raw = import.meta.env.VITE_SUPPORTED_TOKENS
+  if (raw && typeof raw === 'string' && raw.trim()) {
+    try {
+      return normalizeTokens(JSON.parse(raw) as RawToken[])
+    } catch {
+      // 解析失败时回退到默认文件
+    }
   }
+  return normalizeTokens(defaultTokensJson as RawToken[])
 }
 
-const _allTokens = parseEnvTokens()
+const _allTokens = loadSupportedTokens()
 /** 仅返回 decimals=18 的代币（合约要求） */
 export const SUPPORTED_TOKENS = _allTokens.filter((t) => t.decimals === REQUIRED_DECIMALS)
 
