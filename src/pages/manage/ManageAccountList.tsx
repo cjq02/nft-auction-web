@@ -1,12 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useBalance, useReadContract } from 'wagmi'
 import { formatEther, formatUnits } from 'viem'
-import { fetchUserList } from '../../api/auth'
+import { fetchUserList, type UserListItem } from '../../api/auth'
 import { SUPPORTED_TOKENS } from '../../config/supportedTokens'
-import { NFT_CONTRACT_ADDRESS } from '../../contracts/addresses'
-import { erc20Abi, erc721Abi } from '../../contracts/abi'
-
-const ZERO = '0x0000000000000000000000000000000000000000'
+import { erc20Abi } from '../../contracts/abi'
 
 function EthCell({ address }: { address: `0x${string}` }) {
   const { data } = useBalance({ address })
@@ -26,22 +23,11 @@ function TokenCell({ token, address }: { token: { address: `0x${string}`; symbol
   return <span>{formatUnits(data, token.decimals)} {token.symbol}</span>
 }
 
-function NftCountCell({ address }: { address: `0x${string}` }) {
-  const hasNftContract = NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS !== ZERO
-  const { data } = useReadContract({
-    address: hasNftContract ? NFT_CONTRACT_ADDRESS : undefined,
-    abi: erc721Abi,
-    functionName: 'balanceOf',
-    args: [address],
-  })
-  if (!hasNftContract) return <span className="text-zinc-500">—</span>
-  if (data == null) return <span className="text-zinc-500">—</span>
-  return <span>{String(data)}</span>
-}
-
-function AccountRow({ user }: { user: { username: string; walletAddress: string } }) {
+function AccountRow({ user }: { user: UserListItem }) {
   const addr = user.walletAddress as `0x${string}`
   const shortAddr = `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  const nftCount = user.nftCount
+  const auctionCount = user.auctionCount
   return (
     <tr className="border-b border-[var(--border)]">
       <td className="py-3 pr-4 text-white">{user.username || '—'}</td>
@@ -56,8 +42,11 @@ function AccountRow({ user }: { user: { username: string; walletAddress: string 
           <TokenCell token={t} address={addr} />
         </td>
       ))}
+      <td className="py-3 pr-4 text-sm">
+        {nftCount != null ? <span>{nftCount}</span> : <span className="text-zinc-500">—</span>}
+      </td>
       <td className="py-3 text-sm">
-        <NftCountCell address={addr} />
+        {auctionCount != null ? <span>{auctionCount}</span> : <span className="text-zinc-500">—</span>}
       </td>
     </tr>
   )
@@ -70,7 +59,7 @@ export function ManageAccountList() {
     <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
       <h2 className="mb-4 text-lg font-medium text-white">账户列表</h2>
       <p className="mb-4 text-sm text-zinc-500">
-        展示已注册用户的链上资产：ETH 余额、支持的 ERC20 代币数量、持有的 NFT 数量。
+        展示已注册用户的链上资产：ETH 余额、支持的 ERC20 代币数量、NFT 数量（持有）与正在拍卖数量由后端返回。
       </p>
       {isLoading ? (
         <div className="py-8 text-center text-zinc-500">加载中…</div>
@@ -89,7 +78,8 @@ export function ManageAccountList() {
                     {t.symbol}
                   </th>
                 ))}
-                <th className="pb-3 font-medium">NFT 数量</th>
+                <th className="pb-3 pr-4 font-medium">NFT 数量</th>
+                <th className="pb-3 font-medium">拍卖数量</th>
               </tr>
             </thead>
             <tbody>

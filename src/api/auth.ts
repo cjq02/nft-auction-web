@@ -21,6 +21,12 @@ export interface UserInfo {
   email?: string
 }
 
+/** 用户列表项，后端在配置了 NFT/拍卖合约时会附带 nftCount、auctionCount（正在拍卖数） */
+export interface UserListItem extends UserInfo {
+  nftCount?: number
+  auctionCount?: number
+}
+
 export interface AuthResponse {
   token: string
   user: UserInfo
@@ -50,10 +56,10 @@ export interface UpdateProfileBody {
   email?: string  // 传 "" 表示清空
 }
 
-/** GET /api/users/list — 用户列表（用户名+钱包地址），供铸造页下拉等 */
+/** GET /api/users/list — 用户列表（用户名+钱包地址）；配置合约时附带 nftCount、auctionCount */
 export function fetchUserList() {
   return api
-    .get<{ code: number; data: { list: UserInfo[] } }>('/api/users/list')
+    .get<{ code: number; data: { list: UserListItem[] } }>('/api/users/list')
     .then((res) => res.data?.list ?? [])
 }
 
