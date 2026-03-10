@@ -115,8 +115,8 @@ export function Home() {
                 <h2 className="font-medium text-white group-hover:text-[var(--accent)]">
                   {auction.nft?.name ?? `Token #${auction.tokenId}`}
                 </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  卖家 {formatAddress(auction.seller)}
+                <p className="mt-1 text-sm text-zinc-500" title={auction.seller}>
+                  卖家 {auction.sellerName ?? formatAddress(auction.seller)}
                 </p>
                 <p className="mt-1 text-sm text-zinc-500">
                   结束 {formatTime(auction.endTime)}

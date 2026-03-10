@@ -72,7 +72,7 @@ export function AuctionDetail() {
   const { tokenPrice8 } = useTokenPrice(
     !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined
   )
-  const { approve: approveTokenUnlimited, isApproved: isTokenApproved } = useTokenApproval(
+  const { isApproved: isTokenApproved } = useTokenApproval(
     !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined,
     auctionContract
   )
@@ -111,10 +111,6 @@ export function AuctionDetail() {
       const amountWei = parseUnits(bidAmount, decimals)
       placeBidToken(amountWei, auction.paymentToken as `0x${string}`)
     }
-  }
-
-  const handleApproveToken = () => {
-    approveTokenUnlimited()
   }
 
   useEffect(() => {
@@ -246,20 +242,10 @@ export function AuctionDetail() {
                   placeholder="0.0"
                   className="flex-1 min-w-[120px] rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
                 />
-                {!isEthAuction && auction?.paymentToken && !isTokenApproved && (
-                  <button
-                    type="button"
-                    onClick={handleApproveToken}
-                    disabled={bidPending}
-                    className="rounded-lg border border-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-50"
-                  >
-                    授权
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={handleBid}
-                  disabled={bidPending || !bidAmount || insufficientBalance}
+                  disabled={bidPending || !bidAmount || insufficientBalance || (!isEthAuction && !isTokenApproved)}
                   className="rounded-lg bg-[var(--accent)] px-4 py-2 font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
                 >
                   {bidPending ? '提交中...' : '出价'}
@@ -270,9 +256,9 @@ export function AuctionDetail() {
               )}
               {!isEthAuction && !isTokenApproved && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  首次出价需先授权，也可在
+                  请先在
                   <Link to="/profile" className="mx-1 text-[var(--accent)] hover:underline">个人中心</Link>
-                  统一授权
+                  授权代币后再出价
                 </p>
               )}
               {bidError && (
