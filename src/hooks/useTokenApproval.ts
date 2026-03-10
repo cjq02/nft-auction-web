@@ -29,12 +29,24 @@ export function useTokenApproval(tokenAddress: `0x${string}` | undefined, spende
     })
   }
 
+  /** 取消授权：将额度设为 0 */
+  const revoke = () => {
+    if (!tokenAddress) return
+    writeContract({
+      address: tokenAddress,
+      abi: erc20Abi,
+      functionName: 'approve',
+      args: [spender, 0n],
+    })
+  }
+
   useEffect(() => {
     if (isSuccess) refetch()
   }, [isSuccess, refetch])
 
   return {
     approve,
+    revoke,
     allowance,
     isApproved,
     isPending: isPending || isConfirming,

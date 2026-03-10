@@ -59,7 +59,7 @@ function TokenApprovalRow({ token }: { token: SupportedToken }) {
   const { address } = useAccount()
   const { ethPrice8 } = useEthPrice()
   const { tokenPrice8 } = useTokenPrice(token.address)
-  const { approve, isApproved, isPending, error } = useTokenApproval(token.address)
+  const { approve, revoke, isApproved, isPending, error } = useTokenApproval(token.address)
   const { data: balance, refetch: refetchBalance } = useReadContract({
     address: token.address,
     abi: erc20Abi,
@@ -103,7 +103,14 @@ function TokenApprovalRow({ token }: { token: SupportedToken }) {
           </button>
         )}
         {isApproved ? (
-          <span className="text-sm text-[var(--accent)]">已授权</span>
+          <button
+            type="button"
+            onClick={revoke}
+            disabled={isPending}
+            className="rounded-lg border border-zinc-500/50 bg-transparent px-3 py-1.5 text-sm font-medium text-zinc-400 hover:bg-zinc-500/10 hover:text-white disabled:opacity-50"
+          >
+            {isPending ? '取消中...' : '取消授权'}
+          </button>
         ) : (
           <button
             type="button"
