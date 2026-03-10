@@ -75,6 +75,30 @@ export const auctionAbi = [
   },
   {
     type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'tokenPriceFeeds',
+    inputs: [{ name: '', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'setTokenPriceFeed',
+    inputs: [
+      { name: 'token', type: 'address', internalType: 'address' },
+      { name: 'priceFeed', type: 'address', internalType: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'getHighestBid',
     inputs: [{ name: 'auctionId', type: 'uint256', internalType: 'uint256' }],
     outputs: [
@@ -166,7 +190,42 @@ export const erc721Abi = [
   },
 ] as const
 
+/** WETH 合约：deposit 将 ETH 兑换为 WETH */
+export const wethAbi = [
+  {
+    type: 'function',
+    name: 'deposit',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
+  },
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const
+
 export const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ name: 'account', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'allowance',
+    inputs: [
+      { name: 'owner', type: 'address', internalType: 'address' },
+      { name: 'spender', type: 'address', internalType: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
   {
     type: 'function',
     name: 'approve',
@@ -183,5 +242,23 @@ export const erc20Abi = [
     inputs: [],
     outputs: [{ name: '', type: 'uint8', internalType: 'uint8' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'symbol',
+    inputs: [],
+    outputs: [{ name: '', type: 'string', internalType: 'string' }],
+    stateMutability: 'view',
+  },
+] as const
+
+/** TST 等测试代币的 mint() payable 水龙头 ABI */
+export const tokenFaucetMintAbi = [
+  {
+    type: 'function',
+    name: 'mint',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'payable',
   },
 ] as const

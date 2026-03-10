@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAccount } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
+import { parseEther, formatEther, formatUnits, parseUnits } from 'viem'
 import { useAuction, useAuctionBids } from '../hooks/useAuction'
 import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
 import { useToast } from '../hooks/use-toast'
 import { getContractRevertMessage, getShortRevertReason } from '../utils/contractError'
 import { toDisplayImageUrl } from '../utils/ipfs'
 import { minBidDisplayFromApi } from '../utils/auctionDisplay'
+import { isEthPayment, getTokenByAddress } from '../config/supportedTokens'
+import { useTokenApproval } from '../hooks/useTokenApproval'
+import { AUCTION_CONTRACT_ADDRESS } from '../contracts/addresses'
 
 function formatAddress(addr: string | null | undefined) {
   if (!addr) return '-'
@@ -22,13 +25,15 @@ function formatTime(ts: number | string | null | undefined) {
   return new Date(ms).toLocaleString('zh-CN')
 }
 
-/** wei (string) → ETH，保留 4 位小数 */
-function weiToEth(wei: string | null | undefined) {
-  if (!wei) return '-'
+/** 根据 isETH 格式化出价金额 */
+function formatBidAmount(amount: string | null | undefined, isEth: boolean, tokenSymbol?: string) {
+  if (!amount) return '-'
   try {
-    return `${formatEther(BigInt(wei))} ETH`
+    const wei = BigInt(amount)
+    if (isEth) return `${formatEther(wei)} ETH`
+    return `${formatUnits(wei, 18)} ${tokenSymbol ?? 'TOKEN'}`
   } catch {
-    return wei
+    return amount
   }
 }
 
@@ -43,6 +48,7 @@ export function AuctionDetail() {
   const { data: bids = [] } = useAuctionBids(id)
   const {
     placeBidEth,
+    placeBidToken,
     error: bidError,
     isPending: bidPending,
     isSuccess: bidSuccess,
@@ -56,10 +62,27 @@ export function AuctionDetail() {
   const ended = statusLower === 'ended'
   const canEnd = isActive && auction?.endTime && auction.endTime * 1000 <= Date.now()
   const hasBids = (bids?.length ?? 0) > 0
+  const isEthAuction = isEthPayment(auction?.paymentToken)
+  const paymentToken = getTokenByAddress(auction?.paymentToken ?? null)
+  const auctionContract = (auction?.auctionContract || AUCTION_CONTRACT_ADDRESS) as `0x${string}`
+  const { approve: approveTokenUnlimited, isApproved: isTokenApproved } = useTokenApproval(
+    !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined,
+    auctionContract
+  )
 
   const handleBid = () => {
-    const wei = parseEther(bidAmount)
-    placeBidEth(wei)
+    if (isEthAuction) {
+      const wei = parseEther(bidAmount)
+      placeBidEth(wei)
+    } else if (auction?.paymentToken) {
+      const decimals = paymentToken?.decimals ?? 18
+      const amountWei = parseUnits(bidAmount, decimals)
+      placeBidToken(amountWei, auction.paymentToken as `0x${string}`)
+    }
+  }
+
+  const handleApproveToken = () => {
+    approveTokenUnlimited()
   }
 
   useEffect(() => {
@@ -152,7 +175,14 @@ export function AuctionDetail() {
                   return (
                     <span className="block">
                       <span className="block">{usd}</span>
-                      <span className="block text-white">{eth}</span>
+                      {isEthAuction && eth !== '—' && (
+                        <span className="block text-white">{eth}</span>
+                      )}
+                      {!isEthAuction && (
+                        <span className="block text-zinc-400">
+                          以 {paymentToken?.symbol ?? '代币'} 出价
+                        </span>
+                      )}
                     </span>
                   )
                 })()}
@@ -161,25 +191,34 @@ export function AuctionDetail() {
             <div className="flex justify-between">
               <dt className="text-zinc-500">支付方式</dt>
               <dd className="text-white">
-                {!auction.paymentToken ||
-                auction.paymentToken === '0x0000000000000000000000000000000000000000'
-                  ? 'ETH'
-                  : formatAddress(auction.paymentToken)}
+                {isEthAuction ? 'ETH' : paymentToken?.symbol ?? formatAddress(auction.paymentToken)}
               </dd>
             </div>
           </dl>
 
-          {isActive && !isSeller && auction.paymentToken === null && (
+          {isActive && !isSeller && (
             <div className="mt-6 rounded-lg border border-[var(--border)] bg-zinc-900/50 p-4">
-              <label className="block text-sm text-zinc-400">出价 (ETH)</label>
-              <div className="mt-2 flex gap-2">
+              <label className="block text-sm text-zinc-400">
+                出价 ({isEthAuction ? 'ETH' : paymentToken?.symbol ?? '代币'})
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2">
                 <input
                   type="text"
                   value={bidAmount}
                   onChange={(e) => setBidAmount(e.target.value)}
                   placeholder="0.0"
-                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
+                  className="flex-1 min-w-[120px] rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white placeholder-zinc-500 focus:border-[var(--accent)] focus:outline-none"
                 />
+                {!isEthAuction && auction?.paymentToken && !isTokenApproved && (
+                  <button
+                    type="button"
+                    onClick={handleApproveToken}
+                    disabled={bidPending}
+                    className="rounded-lg border border-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-50"
+                  >
+                    授权
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleBid}
@@ -189,6 +228,13 @@ export function AuctionDetail() {
                   {bidPending ? '提交中...' : '出价'}
                 </button>
               </div>
+              {!isEthAuction && !isTokenApproved && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  首次出价需先授权，也可在
+                  <Link to="/profile" className="mx-1 text-[var(--accent)] hover:underline">个人中心</Link>
+                  统一授权
+                </p>
+              )}
               {bidError && (
                 <p className="mt-2 text-sm text-red-400">
                   {getShortRevertReason(bidError)}
@@ -253,7 +299,9 @@ export function AuctionDetail() {
                 <span className="text-zinc-300" title={bid.bidder}>
                   {bid.bidderName ?? formatAddress(bid.bidder)}
                 </span>
-                <span className="text-[var(--accent)]">{weiToEth(bid.amount)}</span>
+                <span className="text-[var(--accent)]">
+                  {formatBidAmount(bid.amount, bid.isETH ?? bid.isEth ?? false, paymentToken?.symbol)}
+                </span>
                 <span className="text-zinc-500">{formatTime(bid.timestamp)}</span>
               </li>
             ))}

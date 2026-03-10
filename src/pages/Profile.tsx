@@ -1,15 +1,26 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { formatEther } from 'viem'
-import { useAccount } from 'wagmi'
+import { formatEther, formatUnits, parseEther } from 'viem'
+import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { useQuery } from '@tanstack/react-query'
 import { useUserAuctions } from '../hooks/useAuction'
 import { useAuth } from '../hooks/useAuth'
+import { useTokenApproval } from '../hooks/useTokenApproval'
+import { useTokenFaucet } from '../hooks/useTokenFaucet'
+import { useEthPrice } from '../hooks/useEthPrice'
+import { useTokenPrice } from '../hooks/useTokenPrice'
 import { ConnectGuard } from '../components/common/ConnectGuard'
 import { fetchMyNfts } from '../api/nft'
 import { NFT_CONTRACT_ADDRESS } from '../contracts/addresses'
+import { SUPPORTED_TOKENS, type SupportedToken } from '../config/supportedTokens'
+import { erc20Abi } from '../contracts/abi'
 import { toDisplayImageUrl } from '../utils/ipfs'
-import { minBidDisplayFromApi } from '../utils/auctionDisplay'
+import {
+  minBidDisplayFromApi,
+  formatEthWithUsd,
+  ethWeiToUsdDisplay,
+  tokenBalanceToUsdDisplay,
+} from '../utils/auctionDisplay'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -28,6 +39,85 @@ function normalizeAuctionStatus(status?: string, endTime?: number | string | nul
   const end = typeof endTime === 'number' ? endTime : Number(endTime ?? 0)
   if (!end || Number.isNaN(end)) return 'Active'
   return Date.now() / 1000 >= end ? 'Ended' : 'Active'
+}
+
+function EthBalance() {
+  const { address } = useAccount()
+  const { data } = useBalance({ address })
+  const { ethPrice8 } = useEthPrice()
+  const { eth, usd } =
+    data?.value != null ? formatEthWithUsd(data.value, ethPrice8) : { eth: '—', usd: '' }
+  return (
+    <p className="mt-2 text-sm font-medium text-white">
+      {eth}
+      {usd && <span className="ml-1 text-zinc-500">({usd})</span>}
+    </p>
+  )
+}
+
+function TokenApprovalRow({ token }: { token: SupportedToken }) {
+  const { address } = useAccount()
+  const { ethPrice8 } = useEthPrice()
+  const { tokenPrice8 } = useTokenPrice(token.address)
+  const { approve, isApproved, isPending, error } = useTokenApproval(token.address)
+  const { data: balance, refetch: refetchBalance } = useReadContract({
+    address: token.address,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+  })
+  const { mint, isPending: faucetPending, isSuccess: faucetSuccess, error: faucetError } =
+    useTokenFaucet(token.address, token.faucetMinEth)
+
+  useEffect(() => {
+    if (faucetSuccess && refetchBalance) refetchBalance()
+  }, [faucetSuccess, refetchBalance])
+
+  const balanceStr =
+    balance != null ? `${formatUnits(balance, token.decimals)} ${token.symbol}` : '—'
+  const balanceUsd =
+    balance != null ? tokenBalanceToUsdDisplay(balance, tokenPrice8) : ''
+  const faucetEthWei = token.faucetMinEth ? parseEther(token.faucetMinEth) : 0n
+  const faucetUsd = ethWeiToUsdDisplay(faucetEthWei, ethPrice8)
+  const faucetLabel =
+    faucetUsd ? `充值 ${token.faucetMinEth} ETH (${faucetUsd})` : `充值 ${token.faucetMinEth} ETH`
+  const displayError = error ?? faucetError
+  return (
+    <li className="flex flex-col gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg)]/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <span className="font-medium text-white">{token.symbol}</span>
+        <span className="ml-2 text-sm text-zinc-500">
+          {balanceStr}
+          {balanceUsd && <span className="ml-1 text-zinc-600">({balanceUsd})</span>}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {token.faucetMinEth && (
+          <button
+            type="button"
+            onClick={mint}
+            disabled={faucetPending}
+            className="rounded-lg border border-[var(--accent)]/50 bg-transparent px-3 py-1.5 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-50"
+          >
+            {faucetPending ? '充值中...' : faucetLabel}
+          </button>
+        )}
+        {isApproved ? (
+          <span className="text-sm text-[var(--accent)]">已授权</span>
+        ) : (
+          <button
+            type="button"
+            onClick={approve}
+            disabled={isPending}
+            className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+          >
+            {isPending ? '授权中...' : '授权'}
+          </button>
+        )}
+        {displayError && <span className="text-xs text-red-400">{displayError.message}</span>}
+      </div>
+    </li>
+  )
 }
 
 function StatusBadge({ status }: { status?: string }) {
@@ -89,12 +179,13 @@ export function Profile() {
           {/* Left: user info + edit form */}
           <div className="lg:col-span-1">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
-              {/* Wallet address */}
+              {/* Wallet address + ETH balance */}
               <div className="mb-4 break-all text-center">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)]/20 text-2xl text-[var(--accent)]">
-                  {user?.username?.[0]?.toUpperCase() ?? '?'}
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-[var(--accent)]/20 px-2 text-center text-xs font-medium leading-tight text-[var(--accent)] line-clamp-2">
+                  {user?.username || '未设置'}
                 </div>
                 <p className="font-mono text-xs text-zinc-500">{address}</p>
+                <EthBalance />
               </div>
 
               {isNewUser && (
@@ -147,16 +238,72 @@ export function Profile() {
             </div>
           </div>
 
-          {/* Right: auction list + NFT list */}
-          <div className="lg:col-span-2 space-y-8">
-            <div>
-            <h2 className="mb-4 text-lg font-medium text-white">我的拍卖</h2>
+          {/* Right: tabs (我的拍卖 | 我的 NFT | 代币授权) */}
+          <div className="lg:col-span-2">
+            <ProfileTabs
+              isLoading={isLoading}
+              error={error}
+              data={data}
+              contractForList={contractForList}
+              myNfts={myNfts}
+              nftLoading={nftLoading}
+            />
+          </div>
+        </div>
+      </ConnectGuard>
+    </div>
+  )
+}
+
+function ProfileTabs({
+  isLoading,
+  error,
+  data,
+  contractForList,
+  myNfts,
+  nftLoading,
+}: {
+  isLoading: boolean
+  error: Error | null
+  data: { items?: Array<{ auctionId?: number; id?: number; tokenId?: number; status?: string; endTime?: number | string; nft?: { name?: string }; minBid?: string; minBidEth?: string }> } | undefined
+  contractForList: string | undefined
+  myNfts: Array<{ tokenId: number; name?: string; description?: string; image?: string; tokenUri?: string }>
+  nftLoading: boolean
+}) {
+  const [tab, setTab] = useState<'auctions' | 'nfts' | 'approval'>('auctions')
+  const tabs = [
+    { key: 'auctions' as const, label: '我的拍卖' },
+    { key: 'nfts' as const, label: '我的 NFT' },
+    { key: 'approval' as const, label: '代币授权' },
+  ]
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)]">
+      <nav className="flex border-b border-[var(--border)]">
+        {tabs.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`px-6 py-3 text-sm font-medium transition ${
+              tab === key
+                ? 'border-b-2 border-[var(--accent)] text-[var(--accent)]'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      <div className="p-6">
+        {tab === 'auctions' && (
+          <>
             {isLoading ? (
-              <div className="h-40 animate-pulse rounded-xl bg-[var(--card)]" />
+              <div className="h-40 animate-pulse rounded-lg bg-[var(--bg)]/50" />
             ) : error ? (
               <p className="text-red-400">加载失败: {(error as Error).message}</p>
             ) : !data?.items?.length ? (
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center text-zinc-500">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)]/50 p-8 text-center text-zinc-500">
                 暂无拍卖，
                 <Link to="/auctions/create" className="ml-1 text-[var(--accent)] hover:underline">
                   去创建
@@ -164,14 +311,14 @@ export function Profile() {
               </div>
             ) : (
               <ul className="space-y-3">
-                {data.items.map((auction) => {
+                {data!.items!.map((auction) => {
                   const auctionId = auction.auctionId ?? auction.id
                   const status = normalizeAuctionStatus(auction.status, auction.endTime)
                   return (
                     <li key={auctionId}>
                       <Link
                         to={`/auctions/${auctionId}`}
-                        className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 transition hover:border-[var(--accent)]/50"
+                        className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg)]/50 p-4 transition hover:border-[var(--accent)]/50"
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-white">
@@ -194,68 +341,86 @@ export function Profile() {
                 })}
               </ul>
             )}
-            </div>
-
-            {/* My NFTs */}
-            {contractForList && (
-              <div>
-                <h2 className="mb-4 text-lg font-medium text-white">我的 NFT</h2>
-                {nftLoading ? (
-                  <div className="h-32 animate-pulse rounded-xl bg-[var(--card)]" />
-                ) : myNfts.length === 0 ? (
-                  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-8 text-center text-zinc-500">
-                    暂无 NFT
-                  </div>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {myNfts.map((item) => {
-                      const imageUrl = toDisplayImageUrl(item.image ?? item.tokenUri ?? undefined)
-                      return (
-                        <div
-                          key={item.tokenId}
-                          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
-                        >
-                          <div className="aspect-square bg-zinc-800">
-                            {imageUrl ? (
-                              <img
-                                src={imageUrl}
-                                alt={item.name ?? `#${item.tokenId}`}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-3xl text-zinc-600">
-                                #{item.tokenId}
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-3">
-                            <p className="truncate font-medium text-white">
-                              {item.name ?? `Token #${item.tokenId}`}
-                            </p>
-                            {item.description && (
-                              <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
-                                {item.description}
-                              </p>
-                            )}
-                            <Link
-                              to="/auctions/create"
-                              className="mt-3 block w-full rounded-lg bg-[var(--accent)]/10 py-1.5 text-center text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)]/20"
-                            >
-                              去拍卖
-                            </Link>
-                          </div>
+          </>
+        )}
+        {tab === 'nfts' && (
+          <>
+            {contractForList ? (
+              nftLoading ? (
+                <div className="h-32 animate-pulse rounded-lg bg-[var(--bg)]/50" />
+              ) : myNfts.length === 0 ? (
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)]/50 p-8 text-center text-zinc-500">
+                  暂无 NFT
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {myNfts.map((item) => {
+                    const imageUrl = toDisplayImageUrl(item.image ?? item.tokenUri ?? undefined)
+                    return (
+                      <div
+                        key={item.tokenId}
+                        className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)]/50"
+                      >
+                        <div className="aspect-square bg-zinc-800">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={item.name ?? `#${item.tokenId}`}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-3xl text-zinc-600">
+                              #{item.tokenId}
+                            </div>
+                          )}
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
+                        <div className="p-3">
+                          <p className="truncate font-medium text-white">
+                            {item.name ?? `Token #${item.tokenId}`}
+                          </p>
+                          {item.description && (
+                            <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
+                              {item.description}
+                            </p>
+                          )}
+                          <Link
+                            to="/auctions/create"
+                            className="mt-3 block w-full rounded-lg bg-[var(--accent)]/10 py-1.5 text-center text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent)]/20"
+                          >
+                            去拍卖
+                          </Link>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            ) : (
+              <div className="py-12 text-center text-zinc-500">NFT 合约未配置</div>
+            )}
+          </>
+        )}
+        {tab === 'approval' && (
+          <>
+            <p className="mb-4 text-sm text-zinc-500">
+              预先授权后，在 ERC20 拍卖出价时无需再次授权
+            </p>
+            {SUPPORTED_TOKENS.length > 0 ? (
+              <ul className="space-y-2">
+                {SUPPORTED_TOKENS.map((t) => (
+                  <TokenApprovalRow key={t.address} token={t} />
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg)]/50 p-8 text-center text-zinc-500">
+                未配置支持的 ERC20 代币，请在 .env 中设置 VITE_SUPPORTED_TOKENS
               </div>
             )}
-          </div>
-        </div>
-      </ConnectGuard>
+          </>
+        )}
+      </div>
     </div>
   )
 }

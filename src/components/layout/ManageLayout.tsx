@@ -1,16 +1,21 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { ConnectGuard } from '../common/ConnectGuard'
 import { useNftOwner } from '../../hooks/useNftOwner'
+import { useAuctionOwner } from '../../hooks/useAuctionOwner'
 
 const navItems = [
   { to: '/manage/overview', label: '数据概览' },
   { to: '/manage/list', label: '已铸造' },
   { to: '/manage/mint', label: '铸造 NFT' },
   { to: '/manage/burn', label: '销毁 NFT' },
+  { to: '/manage/token-price', label: '代币价格' },
 ]
 
 export function ManageLayout() {
-  const { isOwner, isLoading } = useNftOwner()
+  const { isOwner: isNftOwner, isLoading: nftLoading } = useNftOwner()
+  const { isOwner: isAuctionOwner, isLoading: auctionLoading } = useAuctionOwner()
+  const isLoading = nftLoading || auctionLoading
+  const hasAccess = isNftOwner || isAuctionOwner
 
   return (
     <ConnectGuard>
@@ -18,9 +23,9 @@ export function ManageLayout() {
         <div className="mx-auto max-w-4xl px-4 py-12 text-center text-zinc-400">
           正在验证权限…
         </div>
-      ) : !isOwner ? (
+      ) : !hasAccess ? (
         <div className="mx-auto max-w-4xl px-4 py-12 text-center text-zinc-400">
-          当前钱包不是 NFT 合约 Owner，无管理权限。
+          当前钱包不是 NFT 合约或拍卖合约 Owner，无管理权限。
         </div>
       ) : (
         <div className="mx-auto max-w-4xl px-4 py-8">

@@ -8,8 +8,8 @@ import { ConnectGuard } from '../components/common/ConnectGuard'
 import { NFT_CONTRACT_ADDRESS, AUCTION_CONTRACT_ADDRESS } from '../contracts/addresses'
 import { erc721Abi } from '../contracts/abi'
 import { fetchNftList } from '../api/nft'
+import { PAYMENT_ETH, SUPPORTED_TOKENS } from '../config/supportedTokens'
 
-const PAYMENT_ETH = '0x0000000000000000000000000000000000000000' as `0x${string}`
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 type Step = 'approve' | 'create' | 'done'
@@ -74,6 +74,8 @@ export function CreateAuction() {
   // Step 2 state
   const [durationDays, setDurationDays] = useState('7')
   const [minBidUsd, setMinBidUsd] = useState('')
+  const [paymentType, setPaymentType] = useState<'eth' | 'erc20'>('eth')
+  const [selectedTokenAddress, setSelectedTokenAddress] = useState<string>('')
   const [formError, setFormError] = useState<string | null>(null)
 
   const [step, setStep] = useState<Step>('approve')
@@ -146,12 +148,20 @@ export function CreateAuction() {
         setFormError('请输入大于 0 的最低出价')
         return
       }
+      const paymentToken =
+        paymentType === 'eth'
+          ? PAYMENT_ETH
+          : (selectedTokenAddress as `0x${string}`)
+      if (paymentType === 'erc20' && (!selectedTokenAddress || !SUPPORTED_TOKENS.some((t) => t.address.toLowerCase() === selectedTokenAddress.toLowerCase()))) {
+        setFormError('请选择支持的 ERC20 代币')
+        return
+      }
       create({
         nftContract: nftContract as `0x${string}`,
         tokenId: BigInt(tokenId),
         duration: durationSec,
         minBidUSD,
-        paymentToken: PAYMENT_ETH,
+        paymentToken,
       })
     } catch (e) {
       setFormError(
@@ -257,7 +267,53 @@ export function CreateAuction() {
               />
             </div>
 
-            <p className="text-sm text-zinc-500">支付方式：ETH</p>
+            <div>
+              <label className="block text-sm text-zinc-400">支付方式</label>
+              <div className="mt-2 flex gap-4">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    checked={paymentType === 'eth'}
+                    onChange={() => setPaymentType('eth')}
+                    className="text-[var(--accent)]"
+                  />
+                  <span className="text-white">ETH</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    checked={paymentType === 'erc20'}
+                    onChange={() => setPaymentType('erc20')}
+                    className="text-[var(--accent)]"
+                  />
+                  <span className="text-white">ERC20 代币</span>
+                </label>
+              </div>
+              {paymentType === 'erc20' && (
+                <div className="mt-2">
+                  {SUPPORTED_TOKENS.length > 0 ? (
+                    <select
+                      value={selectedTokenAddress}
+                      onChange={(e) => setSelectedTokenAddress(e.target.value)}
+                      className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white focus:border-[var(--accent)] focus:outline-none"
+                    >
+                      <option value="">请选择代币</option>
+                      {SUPPORTED_TOKENS.map((t) => (
+                        <option key={t.address} value={t.address}>
+                          {t.symbol}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-amber-500">
+                      当前未配置支持的 ERC20 代币，请在 .env 中设置 VITE_SUPPORTED_TOKENS
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {(formError || createError) && (
               <p className="text-sm text-red-400">{formError ?? createError?.message}</p>
@@ -274,7 +330,11 @@ export function CreateAuction() {
               <button
                 type="button"
                 onClick={handleCreate}
-                disabled={isCreatePending || !minBidUsd.trim()}
+                disabled={
+                  isCreatePending ||
+                  !minBidUsd.trim() ||
+                  (paymentType === 'erc20' && !selectedTokenAddress)
+                }
                 className="flex-1 rounded-lg bg-[var(--accent)] py-2 font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
               >
                 {isCreatePending ? '等待钱包确认...' : '创建拍卖'}

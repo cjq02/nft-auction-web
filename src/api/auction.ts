@@ -36,7 +36,9 @@ export interface BidItem {
   bidderName?: string  // 账户名称（已注册用户）
   amount: string
   timestamp: string
-  isETH: boolean
+  /** 后端返回 isEth，此处兼容两种命名 */
+  isETH?: boolean
+  isEth?: boolean
 }
 
 export interface ListParams {

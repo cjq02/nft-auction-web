@@ -9,6 +9,7 @@ import { ManageOverview } from './pages/manage/ManageOverview'
 import { ManageNftList } from './pages/manage/ManageNftList'
 import { ManageMint } from './pages/manage/ManageMint'
 import { ManageBurn } from './pages/manage/ManageBurn'
+import { ManageTokenPrice } from './pages/manage/ManageTokenPrice'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="list" element={<ManageNftList />} />
             <Route path="mint" element={<ManageMint />} />
             <Route path="burn" element={<ManageBurn />} />
+            <Route path="token-price" element={<ManageTokenPrice />} />
           </Route>
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />

@@ -57,6 +57,45 @@ export function minBidDisplayDual(
   }
 }
 
+/**
+ * ETH wei 转 USD 展示（使用 Chainlink 8 位小数价格）
+ * usdRaw = ethWei * ethPrice8 / 10^26
+ */
+export function ethWeiToUsdDisplay(ethWei: bigint, ethPrice8: bigint | undefined): string {
+  if (!ethPrice8 || ethPrice8 === 0n) return ''
+  const usdRaw = (ethWei * ethPrice8) / 10n ** 26n
+  if (usdRaw === 0n) return ''
+  const formatted = usdRaw.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return `~$${formatted}`
+}
+
+/**
+ * ERC20 余额（18 位小数）转 USD 展示（使用 Chainlink 8 位小数价格）
+ */
+export function tokenBalanceToUsdDisplay(
+  balance: bigint,
+  tokenPrice8: bigint | undefined
+): string {
+  if (!tokenPrice8 || tokenPrice8 === 0n) return ''
+  const usdRaw = (balance * tokenPrice8) / 10n ** 26n
+  if (usdRaw === 0n) return ''
+  const formatted = usdRaw.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return `~$${formatted}`
+}
+
+/**
+ * 格式化 ETH 金额并附带 USD（如有价格）
+ * 例: "0.5 ETH" 或 "0.5 ETH (~$1,500)"
+ */
+export function formatEthWithUsd(
+  ethWei: bigint,
+  ethPrice8: bigint | undefined
+): { eth: string; usd: string } {
+  const eth = `${formatEther(ethWei)} ETH`
+  const usd = ethWeiToUsdDisplay(ethWei, ethPrice8)
+  return { eth, usd }
+}
+
 /** 最低出价展示：使用后端返回的 minBid（USD）与 minBidEth（已换算），无需前端读链 */
 export function minBidDisplayFromApi(
   minBid: string | null | undefined,
