@@ -7,10 +7,11 @@ import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
 import { useToast } from '../hooks/use-toast'
 import { getContractRevertMessage, getShortRevertReason } from '../utils/contractError'
 import { toDisplayImageUrl } from '../utils/ipfs'
-import { minBidDisplayFromApi, minBidInTokenDisplay } from '../utils/auctionDisplay'
+import { minBidDisplayFromApi, minBidInTokenDisplay, ethWeiToUsdDisplay, tokenBalanceToUsdDisplay } from '../utils/auctionDisplay'
 import { isEthPayment, getTokenByAddress } from '../config/supportedTokens'
 import { useTokenApproval } from '../hooks/useTokenApproval'
 import { useTokenPrice } from '../hooks/useTokenPrice'
+import { useEthPrice } from '../hooks/useEthPrice'
 import { AUCTION_CONTRACT_ADDRESS } from '../contracts/addresses'
 import { erc20Abi } from '../contracts/abi'
 
@@ -67,6 +68,7 @@ export function AuctionDetail() {
   const isEthAuction = isEthPayment(auction?.paymentToken)
   const paymentToken = getTokenByAddress(auction?.paymentToken ?? null)
   const auctionContract = (auction?.auctionContract || AUCTION_CONTRACT_ADDRESS) as `0x${string}`
+  const { ethPrice8 } = useEthPrice()
   const { tokenPrice8 } = useTokenPrice(
     !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined
   )
@@ -329,20 +331,27 @@ export function AuctionDetail() {
           <p className="text-zinc-500">暂无出价</p>
         ) : (
           <ul className="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
-            {bids.map((bid, i) => (
-              <li
-                key={i}
-                className="flex justify-between text-sm"
-              >
-                <span className="text-zinc-300" title={bid.bidder}>
-                  {bid.bidderName ?? formatAddress(bid.bidder)}
-                </span>
-                <span className="text-[var(--accent)]">
-                  {formatBidAmount(bid.amount, bid.isETH ?? bid.isEth ?? false, paymentToken?.symbol)}
-                </span>
-                <span className="text-zinc-500">{formatTime(bid.timestamp)}</span>
-              </li>
-            ))}
+            {bids.map((bid, i) => {
+              const isEth = bid.isETH ?? bid.isEth ?? false
+              const usdStr = isEth
+                ? ethWeiToUsdDisplay(BigInt(bid.amount), ethPrice8)
+                : tokenBalanceToUsdDisplay(BigInt(bid.amount), tokenPrice8)
+              return (
+                <li
+                  key={i}
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm"
+                >
+                  <span className="text-zinc-300" title={bid.bidder}>
+                    {bid.bidderName ?? formatAddress(bid.bidder)}
+                  </span>
+                  <span className="text-[var(--accent)]">
+                    {formatBidAmount(bid.amount, isEth, paymentToken?.symbol)}
+                    {usdStr && <span className="ml-1.5 text-zinc-500 font-normal">({usdStr})</span>}
+                  </span>
+                  <span className="text-zinc-500">{formatTime(bid.timestamp)}</span>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

@@ -57,30 +57,38 @@ export function minBidDisplayDual(
   }
 }
 
-/**
- * ETH wei 转 USD 展示（使用 Chainlink 8 位小数价格）
- * usdRaw = ethWei * ethPrice8 / 10^26
- */
-export function ethWeiToUsdDisplay(ethWei: bigint, ethPrice8: bigint | undefined): string {
-  if (!ethPrice8 || ethPrice8 === 0n) return ''
-  const usdRaw = (ethWei * ethPrice8) / 10n ** 26n
-  if (usdRaw === 0n) return ''
-  const formatted = usdRaw.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return `~$${formatted}`
+/** USD 18 位小数 bigint 格式化为保留 2 位小数的展示字符串（含千分位） */
+function formatUsd2Decimals(usdValue18: bigint): string {
+  if (usdValue18 === 0n) return '0.00'
+  const intPart = usdValue18 / (10n ** 18n)
+  const fracPart = (usdValue18 % (10n ** 18n)) * 100n / (10n ** 18n)
+  const intStr = intPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const fracStr = fracPart.toString().padStart(2, '0')
+  return `${intStr}.${fracStr}`
 }
 
 /**
- * ERC20 余额（18 位小数）转 USD 展示（使用 Chainlink 8 位小数价格）
+ * ETH wei 转 USD 展示（使用 Chainlink 8 位小数价格），保留 2 位小数
+ * usdValue18 = ethWei * ethPrice8 / 1e8
+ */
+export function ethWeiToUsdDisplay(ethWei: bigint, ethPrice8: bigint | undefined): string {
+  if (!ethPrice8 || ethPrice8 === 0n) return ''
+  const usdValue18 = (ethWei * ethPrice8) / (10n ** 8n)
+  if (usdValue18 === 0n) return ''
+  return `≈ $${formatUsd2Decimals(usdValue18)}`
+}
+
+/**
+ * ERC20 余额（18 位小数）转 USD 展示（使用 Chainlink 8 位小数价格），保留 2 位小数
  */
 export function tokenBalanceToUsdDisplay(
   balance: bigint,
   tokenPrice8: bigint | undefined
 ): string {
   if (!tokenPrice8 || tokenPrice8 === 0n) return ''
-  const usdRaw = (balance * tokenPrice8) / 10n ** 26n
-  if (usdRaw === 0n) return ''
-  const formatted = usdRaw.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return `~$${formatted}`
+  const usdValue18 = (balance * tokenPrice8) / (10n ** 8n)
+  if (usdValue18 === 0n) return ''
+  return `≈ $${formatUsd2Decimals(usdValue18)}`
 }
 
 /**
