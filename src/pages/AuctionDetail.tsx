@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useAccount } from 'wagmi'
+import { useAccount, useBalance, useReadContract } from 'wagmi'
 import { parseEther, formatEther, formatUnits, parseUnits } from 'viem'
 import { useAuction, useAuctionBids } from '../hooks/useAuction'
 import { usePlaceBid, useEndAuction, useCancelAuction } from '../hooks/useBid'
@@ -12,6 +12,7 @@ import { isEthPayment, getTokenByAddress } from '../config/supportedTokens'
 import { useTokenApproval } from '../hooks/useTokenApproval'
 import { useTokenPrice } from '../hooks/useTokenPrice'
 import { AUCTION_CONTRACT_ADDRESS } from '../contracts/addresses'
+import { erc20Abi } from '../contracts/abi'
 
 function formatAddress(addr: string | null | undefined) {
   if (!addr) return '-'
@@ -73,6 +74,31 @@ export function AuctionDetail() {
     !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined,
     auctionContract
   )
+
+  const { data: ethBalance } = useBalance({ address: address ?? undefined })
+  const { data: tokenBalance } = useReadContract({
+    address: !isEthAuction && auction?.paymentToken ? (auction.paymentToken as `0x${string}`) : undefined,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+  })
+
+  const insufficientBalance = (() => {
+    if (!bidAmount.trim()) return false
+    try {
+      if (isEthAuction) {
+        const need = parseEther(bidAmount)
+        return ethBalance?.value != null && ethBalance.value < need
+      }
+      if (auction?.paymentToken && paymentToken) {
+        const need = parseUnits(bidAmount, paymentToken.decimals)
+        return tokenBalance != null && BigInt(tokenBalance) < need
+      }
+    } catch {
+      /* 输入非有效数字时不判定为余额不足 */
+    }
+    return false
+  })()
 
   const handleBid = () => {
     if (isEthAuction) {
@@ -231,12 +257,15 @@ export function AuctionDetail() {
                 <button
                   type="button"
                   onClick={handleBid}
-                  disabled={bidPending || !bidAmount}
+                  disabled={bidPending || !bidAmount || insufficientBalance}
                   className="rounded-lg bg-[var(--accent)] px-4 py-2 font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
                 >
                   {bidPending ? '提交中...' : '出价'}
                 </button>
               </div>
+              {insufficientBalance && (
+                <p className="mt-2 text-sm text-amber-500">余额不足</p>
+              )}
               {!isEthAuction && !isTokenApproved && (
                 <p className="mt-2 text-xs text-zinc-500">
                   首次出价需先授权，也可在
