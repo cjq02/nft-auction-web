@@ -91,7 +91,9 @@ export function formatEthWithUsd(
   ethWei: bigint,
   ethPrice8: bigint | undefined
 ): { eth: string; usd: string } {
-  const eth = `${formatEther(ethWei)} ETH`
+  // 统一 ETH 展示精度为 3 位小数，便于前端页面阅读
+  const ethNum = Number(formatEther(ethWei))
+  const eth = `${ethNum.toFixed(3)} ETH`
   const usd = ethWeiToUsdDisplay(ethWei, ethPrice8)
   return { eth, usd }
 }

@@ -166,6 +166,13 @@ export const nftMarketplaceAbi = [
 export const erc721Abi = [
   {
     type: 'function',
+    name: 'balanceOf',
+    inputs: [{ name: 'owner', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'approve',
     inputs: [
       { name: 'to', type: 'address', internalType: 'address' },

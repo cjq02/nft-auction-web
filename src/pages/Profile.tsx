@@ -180,11 +180,13 @@ export function Profile() {
           <div className="lg:col-span-1">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
               {/* Wallet address + ETH balance */}
-              <div className="mb-4 break-all text-center">
+              <div className="mb-4 text-center">
                 <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-[var(--accent)]/20 px-2 text-center text-xs font-medium leading-tight text-[var(--accent)] line-clamp-2">
                   {user?.username || '未设置'}
                 </div>
-                <p className="font-mono text-xs text-zinc-500">{address}</p>
+                <p className="font-mono text-xs text-zinc-500">
+                  {address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '—'}
+                </p>
                 <EthBalance />
               </div>
 
