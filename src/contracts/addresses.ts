@@ -6,4 +6,3 @@ export const NFT_CONTRACT_ADDRESS = (import.meta.env
 /** Sepolia WETH，可通过 VITE_WETH_ADDRESS 覆盖 */
 export const WETH_ADDRESS = (import.meta.env.VITE_WETH_ADDRESS ||
   '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14') as `0x${string}`
-

@@ -8,6 +8,7 @@ const navItems = [
   { to: '/manage/list', label: '已铸造' },
   { to: '/manage/mint', label: '铸造 NFT' },
   { to: '/manage/burn', label: '销毁 NFT' },
+  { to: '/manage/token-mint', label: '代币铸造' },
   { to: '/manage/token-price', label: '代币价格' },
 ]
 

@@ -3,6 +3,7 @@
  * 合约需已通过 setTokenPriceFeed 设置价格预言机
  * 可通过 VITE_SUPPORTED_TOKENS 环境变量覆盖（JSON 数组）
  * faucetMinEth: 可选，有此字段时代币支持用 ETH 充值（调用 mint() payable）
+ * adminMint: 可选，为 true 时表示仅管理员（合约 owner）可铸造，管理页「代币铸造」中可选该代币
  */
 export interface SupportedToken {
   address: `0x${string}`
@@ -10,6 +11,8 @@ export interface SupportedToken {
   decimals: number
   /** 用 ETH 充值时的最小金额，如 "0.001" */
   faucetMinEth?: string
+  /** 是否为管理员铸造代币（仅 owner 可 mint，在管理页「代币铸造」中可选） */
+  adminMint?: boolean
 }
 
 const ZERO = '0x0000000000000000000000000000000000000000' as `0x${string}`
@@ -31,12 +34,14 @@ function parseEnvTokens(): SupportedToken[] {
       symbol: string
       decimals?: number
       faucetMinEth?: string
+      adminMint?: boolean
     }>
     return arr.map((t) => ({
       address: t.address as `0x${string}`,
       symbol: t.symbol,
       decimals: t.decimals ?? 18,
       faucetMinEth: t.faucetMinEth,
+      adminMint: t.adminMint === true,
     }))
   } catch {
     return DEFAULT_TOKENS
@@ -60,3 +65,6 @@ export function getTokenByAddress(addr: string | null | undefined): SupportedTok
   if (!addr || isEthPayment(addr)) return null
   return SUPPORTED_TOKENS.find((t) => t.address.toLowerCase() === addr.toLowerCase()) ?? null
 }
+
+/** 标记为管理员铸造的代币（adminMint === true），用于管理页「代币铸造」 */
+export const ADMIN_MINT_TOKENS = SUPPORTED_TOKENS.filter((t) => t.adminMint === true)
