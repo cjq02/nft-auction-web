@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits } from 'viem'
@@ -28,6 +29,7 @@ const mintableTokens = ADMIN_MINT_TOKENS.map((t) => ({
 }))
 
 export function ManageTokenMint() {
+  const navigate = useNavigate()
   const [selectedTokenAddress, setSelectedTokenAddress] = useState(mintableTokens[0]?.address ?? '')
   const [selectedReceiver, setSelectedReceiver] = useState('')
   const [customAddress, setCustomAddress] = useState('')
@@ -36,6 +38,10 @@ export function ManageTokenMint() {
 
   const { writeContract, data: hash, error: writeError, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  useEffect(() => {
+    if (isSuccess) navigate('/manage/accounts')
+  }, [isSuccess, navigate])
 
   const resolvedAddress =
     selectedReceiver === CUSTOM_ADDRESS_VALUE ? customAddress.trim() : selectedReceiver
