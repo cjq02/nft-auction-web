@@ -74,8 +74,9 @@ export function CreateAuction() {
   const nftContract = NFT_CONTRACT_ADDRESS
   const [tokenId, setTokenId] = useState('')
 
-  // Step 2 state
-  const [durationDays, setDurationDays] = useState('7')
+  // Step 2 state：拍卖时长（数值 + 单位：天/小时/分钟）
+  const [durationValue, setDurationValue] = useState('1')
+  const [durationUnit, setDurationUnit] = useState<'day' | 'hour' | 'minute'>('day')
   const [minBidUsd, setMinBidUsd] = useState('')
   const [paymentType, setPaymentType] = useState<'eth' | 'erc20'>('eth')
   const [selectedTokenAddress, setSelectedTokenAddress] = useState<string>('')
@@ -149,7 +150,14 @@ export function CreateAuction() {
   const handleCreate = () => {
     setFormError(null)
     try {
-      const durationSec = BigInt(Number(durationDays) * 24 * 60 * 60)
+      const num = Number(durationValue)
+      if (!Number.isInteger(num) || num <= 0) {
+        setFormError('请输入大于 0 的整数作为拍卖时长')
+        return
+      }
+      const secPerUnit =
+        durationUnit === 'day' ? 24 * 60 * 60 : durationUnit === 'hour' ? 60 * 60 : 60
+      const durationSec = BigInt(num * secPerUnit)
       // 最低出价单位为美元，合约要求 18 位小数
       const minBidUSD = parseUnits(minBidUsd.trim(), 18)
       if (minBidUSD === 0n) {
@@ -254,14 +262,25 @@ export function CreateAuction() {
             </div>
 
             <div>
-              <label className="block text-sm text-zinc-400">拍卖时长（天）</label>
-              <input
-                type="number"
-                min="1"
-                value={durationDays}
-                onChange={(e) => setDurationDays(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white focus:border-[var(--accent)] focus:outline-none"
-              />
+              <label className="block text-sm text-zinc-400">拍卖时长</label>
+              <div className="mt-1 flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={durationValue}
+                  onChange={(e) => setDurationValue(e.target.value)}
+                  className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white focus:border-[var(--accent)] focus:outline-none"
+                />
+                <select
+                  value={durationUnit}
+                  onChange={(e) => setDurationUnit(e.target.value as 'day' | 'hour' | 'minute')}
+                  className="w-[7rem] rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-white focus:border-[var(--accent)] focus:outline-none"
+                >
+                  <option value="day">天</option>
+                  <option value="hour">小时</option>
+                  <option value="minute">分钟</option>
+                </select>
+              </div>
             </div>
 
             <div>
