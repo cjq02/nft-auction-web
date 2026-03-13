@@ -60,11 +60,15 @@ export function AuctionDetail() {
   const { cancelAuction, error: cancelError, isPending: cancelPending } = useCancelAuction(id, auction?.auctionContract)
 
   const isSeller = address && auction?.seller?.toLowerCase() === address.toLowerCase()
+  const isHighestBidder =
+    address &&
+    auction?.highestBid?.bidder?.toLowerCase() === address.toLowerCase()
   const statusLower = auction?.status?.toLowerCase()
   const isActive = statusLower === 'active'
   const ended = statusLower === 'ended'
   const canEnd = isActive && auction?.endTime && auction.endTime * 1000 <= Date.now()
   const hasBids = (bids?.length ?? 0) > 0
+  const canCallEnd = canEnd && (isSeller || isHighestBidder)
   const isEthAuction = isEthPayment(auction?.paymentToken)
   const paymentToken = getTokenByAddress(auction?.paymentToken ?? null)
   const auctionContract = (auction?.auctionContract || AUCTION_CONTRACT_ADDRESS) as `0x${string}`
@@ -287,7 +291,7 @@ export function AuctionDetail() {
             </div>
           )}
 
-          {canEnd && isSeller && (
+          {canCallEnd && (
             <div className="mt-6">
               <button
                 type="button"

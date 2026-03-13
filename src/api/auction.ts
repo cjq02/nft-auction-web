@@ -55,6 +55,12 @@ export interface ListResponse<T> {
   limit?: number
 }
 
+export interface PlatformStats {
+  totalAuctions: number
+  bidCount: number
+  totalValue: string // 最高出价合计（wei，字符串）
+}
+
 export function fetchAuctionList(params?: ListParams) {
   const search = new URLSearchParams()
   if (params?.page != null) search.set('page', String(params.page))
@@ -64,6 +70,15 @@ export function fetchAuctionList(params?: ListParams) {
   const q = search.toString()
   return api
     .get<{ code: number; data: ListResponse<AuctionListItem> }>(`/api/auctions${q ? `?${q}` : ''}`)
+    .then((res) => res.data)
+}
+
+export function fetchAuctionStats(contract?: string) {
+  const search = new URLSearchParams()
+  if (contract) search.set('contract', contract)
+  const q = search.toString()
+  return api
+    .get<{ code: number; data: PlatformStats }>(`/api/auctions/stats${q ? `?${q}` : ''}`)
     .then((res) => res.data)
 }
 
