@@ -23,7 +23,11 @@ export interface AuctionListItem {
   paymentToken: string | null
   status: string          // 后端返回 "Active" / "Ended" / "Cancelled"
   nft?: { name?: string; image?: string; description?: string; tokenURI?: string }
-  highestBid?: { amount: string; bidder: string }
+  highestBid?: { amount: string; bidder: string; isETH?: boolean; isEth?: boolean }
+  /** 该场拍卖收取的手续费（wei 字符串），仅已结束且有成交时由事件索引填充 */
+  feeAmount?: string | null
+  /** 手续费是否为 ETH */
+  feeIsETH?: boolean | null
 }
 
 export interface AuctionDetail extends AuctionListItem {

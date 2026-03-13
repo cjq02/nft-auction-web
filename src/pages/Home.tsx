@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatEther } from 'viem'
+import { formatEther, formatUnits } from 'viem'
 import { useAuctionList } from '../hooks/useAuction'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toDisplayImageUrl } from '../utils/ipfs'
 import { minBidDisplayFromApi } from '../utils/auctionDisplay'
 import { fetchAuctionStats } from '../api/auction'
+import { getTokenByAddress, isEthPayment } from '../config/supportedTokens'
 
 function formatTime(ts: number | string | null | undefined) {
   if (!ts) return '-'
@@ -23,6 +24,25 @@ function weiToEth(wei: string) {
     return `${formatEther(BigInt(wei))} ETH`
   } catch {
     return wei
+  }
+}
+
+function formatHighestBid(auction: { highestBid?: { amount: string; isETH?: boolean; isEth?: boolean }; paymentToken: string | null }) {
+  const hb = auction.highestBid
+  if (!hb || !hb.amount) return ''
+  const isEth = isEthPayment(auction.paymentToken) || hb.isETH === true || hb.isEth === true
+  try {
+    const amount = BigInt(hb.amount)
+    if (amount === 0n) return ''
+    if (isEth) {
+      return `${formatEther(amount)} ETH`
+    }
+    const token = getTokenByAddress(auction.paymentToken)
+    const decimals = token?.decimals ?? 18
+    const symbol = token?.symbol ?? '代币'
+    return `${formatUnits(amount, decimals)} ${symbol}`
+  } catch {
+    return hb.amount
   }
 }
 
@@ -196,9 +216,9 @@ export function Home() {
                 <p className="mt-1 text-sm text-zinc-500">
                   地板价: {floor}
                 </p>
-                {auction.highestBid && (
+                {formatHighestBid(auction) && (
                   <p className="mt-2 text-sm text-[var(--accent)]">
-                    当前最高价: {weiToEth(auction.highestBid.amount)}
+                    当前最高价: {formatHighestBid(auction)}
                   </p>
                 )}
               </div>

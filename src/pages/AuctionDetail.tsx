@@ -231,6 +231,14 @@ export function AuctionDetail() {
                 {isEthAuction ? 'ETH' : paymentToken?.symbol ?? formatAddress(auction.paymentToken)}
               </dd>
             </div>
+            {ended && auction.feeAmount != null && auction.feeAmount !== '' && auction.feeAmount !== '0' && (
+              <div className="flex justify-between">
+                <dt className="text-zinc-500">本场手续费</dt>
+                <dd className="text-white">
+                  {formatBidAmount(auction.feeAmount, auction.feeIsETH ?? false, paymentToken?.symbol)}
+                </dd>
+              </div>
+            )}
           </dl>
 
           {isActive && !isSeller && (
