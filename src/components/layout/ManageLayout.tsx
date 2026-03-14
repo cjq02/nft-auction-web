@@ -5,6 +5,7 @@ import { useAuctionOwner } from '../../hooks/useAuctionOwner'
 
 const navItems = [
   { to: '/manage/overview', label: '数据概览' },
+  { to: '/manage/auction-history', label: '历史拍卖' },
   { to: '/manage/accounts', label: '账户列表' },
   { to: '/manage/list', label: '已铸造' },
   { to: '/manage/mint', label: '铸造 NFT' },
